@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Serial Text + Color Sender</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background: #f0f0f0;
+    }
+    .container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin: auto;
+    }
+    input[type="text"], button {
+      padding: 0.6rem;
+      margin: 0.5rem 0;
+      width: 100%;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    input[type="text"].invalid {
+      border-color: #e74c3c;
+      background-color: #f8f8f8;
+      color: #999;
+    }
+    input[type="color"] {
+      width: 100%;
+      height: 50px;
+      border: none;
+      border-radius: 8px;
+      margin: 0.5rem 0;
+      cursor: pointer;
+    }
+    button {
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      color: #666666;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    label {
+      font-weight: bold;
+    }
+    
+    /* New styles for tabs and custom character editor */
+    .tabs {
+      display: flex;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #ccc;
+    }
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      margin-right: 0.5rem;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab.active {
+      background: #007BFF;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* 16-segment display styles */
+    .segment-display {
+      position: relative;
+      width: 200px;
+      height: 280px; /* Reduced from 300px to 280px */
+      margin: 0 auto 1rem;
+      background: #222;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .segment {
+      position: absolute;
+      background: #444;
+      cursor: pointer;
+      border-radius: 4px;
+      z-index: 1; /* Base z-index for inactive segments */
+    }
+    .segment.active {
+      background: #007BFF;
+      z-index: 10; /* Higher z-index for active segments to ensure they're on top */
+    }
+    
+    /* Horizontal segments */
+    .segment-h {
+      height: 16px;
+      width: 80px;
+    }
+    
+    /* Vertical segments */
+    .segment-v {
+      height: 120px;
+      width:16px;
+    }
+    
+    /* Diagonal segments */
+    .segment-d {
+      height: 120px;
+      width: 16px;
+    }
+    
+    /* Positions for each segment */
+    #seg-0 { /* Top left horizontal */
+      top: 20px;
+      left: 40px;
+    }
+    #seg-1 { /* Top right horizontal */
+      top: 20px;
+      right: 40px;
+    }
+    #seg-2 { /* Bottom right horizontal */
+        bottom: 30px; /* Changed from 50px to 30px */
+        right: 40px;
+    }
+    #seg-3 { /* Bottom left horizontal */
+      bottom: 30px; /* Changed from 50px to 30px */
+      left: 40px;
+    }
+    #seg-4 { /* Bottom left vertical */
+      bottom: 40px; /* Changed from 60px to 40px */
+      left: 30px;
+    }
+    #seg-5 { /* Top left vertical */
+      top: 30px;
+      left: 30px;
+    }
+    /* Middle horizontal segments corrected */
+    #seg-6 { /* Middle left horizontal */
+      top: 147px;
+      left: 40px;
+      width: 80px;
+    }
+    #seg-7 { /* Middle right horizontal */
+      top: 147px;
+      right: 40px;
+      width: 80px;
+    }
+    #seg-8 { /* Top right vertical */
+      top: 30px;
+      right: 30px;
+    }
+    #seg-9 { /* Bottom right vertical */
+        bottom: 40px; /* Changed from 60px to 40px */
+        right: 30px;
+    }
+    #seg-10 { /* Top left diagonal (\) */
+      top: 30px;
+      left: 40px;
+      height: 140px;
+      transform: rotate(-30deg);
+      transform-origin: top left;
+    }
+    #seg-11 { /* Top right diagonal (/) */
+      top: 30px;
+      right: 40px;
+      height: 140px;
+      transform: rotate(30deg);
+      transform-origin: top right;
+    }
+    #seg-12 { /* Bottom left diagonal (/) */
+        bottom: 40px; /* Changed from 60px to 40px */
+        left: 40px;
+        height: 140px;
+        transform: rotate(30deg);
+        transform-origin: bottom left;
+    }
+    #seg-13 { /* Bottom right diagonal (\) */
+        bottom: 40px; /* Changed from 60px to 40px */
+        right: 40px;
+        height: 140px;
+        transform: rotate(-30deg);
+        transform-origin: bottom right;
+    }
+    /* Center segments adjusted - one vertical, one horizontal */
+
+    #seg-15 { /* Center vertical */
+      top: 30px;
+      left: 112px;
+      height: 120px;
+    }
+    #seg-14 { /* Center vertical */
+      bottom: 40px; /* Changed from 160px to 140px */
+      left: 112px;
+      height: 120px;
+    }
+    
+    .segment-controls {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .pattern-preview {
+      font-family: monospace;
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .error-message {
+      color: #e74c3c;
+      font-size: 0.9rem;
+      margin-top: -0.3rem;
+      margin-bottom: 0.5rem;
+      min-height: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Serial Sender</h2>
+    
+    <div class="tabs">
+      <div class="tab active" id="textTab">Text Mode</div>
+      <div class="tab" id="customTab">Custom Character</div>
+    </div>
+    
+    <div class="tab-content active" id="textContent">
+      <label for="textInput">Text</label>
+      <input type="text" id="textInput" placeholder="Enter text (e.g. HELLO)">
+      <div id="textError" class="error-message"></div>
+    </div>
+    
+    <div class="tab-content" id="customContent">
+      <h3>Custom 16-Segment Display</h3>
+      <p>Click segments to toggle them on/off</p>
+      
+      <div class="segment-display">
+        <!-- Top segments -->
+        <div id="seg-0" class="segment segment-h" data-index="0"></div>
+        <div id="seg-1" class="segment segment-h" data-index="1"></div>
+        
+        <!-- Bottom segments -->
+        <div id="seg-2" class="segment segment-h" data-index="2"></div>
+        <div id="seg-3" class="segment segment-h" data-index="3"></div>
+        
+        <!-- Left segments -->
+        <div id="seg-4" class="segment segment-v" data-index="4"></div>
+        <div id="seg-5" class="segment segment-v" data-index="5"></div>
+        
+        <!-- Middle segments -->
+        <div id="seg-6" class="segment segment-h" data-index="6"></div>
+        <div id="seg-7" class="segment segment-h" data-index="7"></div>
+        
+        <!-- Right segments -->
+        <div id="seg-8" class="segment segment-v" data-index="8"></div>
+        <div id="seg-9" class="segment segment-v" data-index="9"></div>
+        
+        <!-- Diagonal segments -->
+        <div id="seg-10" class="segment segment-d" data-index="10"></div>
+        <div id="seg-11" class="segment segment-d" data-index="11"></div>
+        <div id="seg-12" class="segment segment-d" data-index="12"></div>
+        <div id="seg-13" class="segment segment-d" data-index="13"></div>
+        
+        <!-- Center cross segments -->
+        
+        <div id="seg-15" class="segment segment-v" data-index="15"></div>
+        <div id="seg-14" class="segment segment-v" data-index="14"></div>
+      </div>
+      
+      <div class="segment-controls">
+        <button id="clearSegments">Clear All</button>
+      </div>
+      
+      <div class="pattern-preview">
+        Pattern: <span id="patternPreview">0000000000000000</span>
+      </div>
+    </div>
+    
+    <label for="colorInput">Color</label>
+    <input type="color" id="colorInput" value="#ff0000">
+
+    <button id="connectButton">Connect Serial</button>
+    <button id="sendButton" disabled>Send</button>
+  </div>
+
+  <script>
+    let port;
+    let writer;
+    let currentPattern = Array(16).fill(0);
+    let isTextValid = true;
+
+    const connectButton = document.getElementById('connectButton');
+    const sendButton = document.getElementById('sendButton');
+    const textInput = document.getElementById('textInput');
+    const textError = document.getElementById('textError');
+    const colorInput = document.getElementById('colorInput');
+    
+    // New elements
+    const textTab = document.getElementById('textTab');
+    const customTab = document.getElementById('customTab');
+    const textContent = document.getElementById('textContent');
+    const customContent = document.getElementById('customContent');
+    const patternPreview = document.getElementById('patternPreview');
+    const clearSegmentsButton = document.getElementById('clearSegments');
+    
+    // Validate input text
+    function validateInput() {
+      const text = textInput.value.trim();
+      if (text === '') {
+        textError.textContent = '';
+        textInput.classList.remove('invalid');
+        isTextValid = true;
+        return;
+      }
+      
+      // Check if text contains only A-Z, 0-9, and spaces
+      const isValid = /^[A-Za-z0-9 ]+$/.test(text);
+      
+      if (!isValid) {
+        textError.textContent = 'Only A-Z, 0-9, and spaces are allowed';
+        textInput.classList.add('invalid');
+        isTextValid = false;
+      } else {
+        textError.textContent = '';
+        textInput.classList.remove('invalid');
+        isTextValid = true;
+      }
+      
+      // Update send button state
+      updateSendButtonState();
+    }
+    
+    // Update send button enabled/disabled state
+    function updateSendButtonState() {
+      if (sendButton.disabled === true && connectButton.disabled === true) {
+        // Connection is established, update based on input validity
+        sendButton.disabled = !isTextValid && textContent.classList.contains('active');
+      }
+    }
+    
+    // Add input validation event
+    textInput.addEventListener('input', validateInput);
+    
+    // Set up tab switching
+    textTab.addEventListener('click', () => {
+      textTab.classList.add('active');
+      customTab.classList.remove('active');
+      textContent.classList.add('active');
+      customContent.classList.remove('active');
+      updateSendButtonState();
+    });
+    
+    customTab.addEventListener('click', () => {
+      customTab.classList.add('active');
+      textTab.classList.remove('active');
+      customContent.classList.add('active');
+      textContent.classList.remove('active');
+      // Always enable send button in custom mode if connected
+      if (connectButton.disabled) {
+        sendButton.disabled = false;
+      }
+    });
+    
+    // Set up segment click handlers
+    document.querySelectorAll('.segment').forEach(segment => {
+      const index = parseInt(segment.dataset.index);
+      segment.addEventListener('click', () => {
+        segment.classList.toggle('active');
+        currentPattern[index] = segment.classList.contains('active') ? 1 : 0;
+        updatePatternPreview();
+      });
+    });
+    
+    // Clear all segments
+    clearSegmentsButton.addEventListener('click', () => {
+      document.querySelectorAll('.segment').forEach(segment => {
+        segment.classList.remove('active');
+      });
+      currentPattern = Array(16).fill(0);
+      updatePatternPreview();
+    });
+    
+    function updatePatternPreview() {
+      patternPreview.textContent = currentPattern.join('');
+    }
+
+    connectButton.addEventListener('click', async () => {
+      try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 9600 });
+        writer = port.writable.getWriter();
+        connectButton.textContent = "Connected";
+        connectButton.disabled = true;
+        
+        // Enable send button only if text is valid or in custom mode
+        if (textContent.classList.contains('active')) {
+          sendButton.disabled = !isTextValid;
+        } else {
+          sendButton.disabled = false;
+        }
+      } catch (err) {
+        alert('Connection failed: ' + err);
+      }
+    });
+
+    sendButton.addEventListener('click', async () => {
+      if (!writer) return;
+
+      const color = colorInput.value.substring(1); // remove the #
+      let formatted;
+      
+      if (textContent.classList.contains('active')) {
+        // Send text mode
+        const text = textInput.value.trim().toUpperCase();
+        if (!isTextValid) return; // Extra check
+        formatted = `${text}|${color}\n`;
+      } else {
+        // Send custom pattern mode
+        const pattern = currentPattern.join('');
+        formatted = `CUSTOM|${pattern}|${color}\n`;
+      }
+
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(formatted));
+    });
+  </script>
+</body>
+</html>

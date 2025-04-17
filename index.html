@@ -44,18 +44,23 @@
     label {
       font-weight: bold;
     }
+    h3 {
+      color: #7b7b7b;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Serial Sender</h2>
+    <button id="connectButton">Connect Serial</button>
     <label for="textInput">Text</label>
     <input type="text" id="textInput" placeholder="Enter text (e.g. HELLO)">
+    <h3>Supports letters A-Z and numbers 0-9</h3>
 
     <label for="colorInput">Color</label>
     <input type="color" id="colorInput" value="#ff0000">
 
-    <button id="connectButton">Connect Serial</button>
+    
     <button id="sendButton" disabled>Send</button>
   </div>
 

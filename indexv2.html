@@ -221,6 +221,36 @@
       margin-bottom: 0.5rem;
       min-height: 1.2rem;
     }
+
+    /* Display selector style */
+    .display-selector {
+      margin-bottom: 1rem;
+    }
+    
+    .display-selector label {
+      margin-right: 1rem;
+    }
+
+    /* Text mode toggle style */
+    .text-mode-toggle {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .speed-control {
+      margin-top: 0.5rem;
+    }
+    
+    .speed-control input {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    
+    .speed-control .speed-value {
+      text-align: center;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -232,10 +262,38 @@
       <div class="tab" id="customTab">Custom Character</div>
     </div>
     
+    <!-- Add display selector -->
+    <div class="display-selector">
+      <label>Select Display:</label>
+      <input type="radio" id="display0" name="displaySelect" value="0" checked>
+      <label for="display0">Display 1</label>
+      <input type="radio" id="display1" name="displaySelect" value="1">
+      <label for="display1">Display 2</label>
+    </div>
+    
     <div class="tab-content active" id="textContent">
       <label for="textInput">Text</label>
       <input type="text" id="textInput" placeholder="Enter text (e.g. HELLO)">
       <div id="textError" class="error-message"></div>
+      
+      <!-- Add text mode toggle -->
+      <div class="text-mode-toggle">
+        <div>
+          <input type="radio" id="staticText" name="textMode" value="static" checked>
+          <label for="staticText">Static Text</label>
+        </div>
+        <div>
+          <input type="radio" id="scrollingText" name="textMode" value="scroll">
+          <label for="scrollingText">Scrolling Text</label>
+        </div>
+      </div>
+      
+      <!-- Add scroll speed control (only visible when scrolling is selected) -->
+      <div class="speed-control" id="speedControl" style="display: none;">
+        <label for="scrollSpeed">Scroll Speed:</label>
+        <input type="range" id="scrollSpeed" min="50" max="500" value="150">
+        <div class="speed-value"><span id="speedValue">150</span> ms</div>
+      </div>
     </div>
     
     <div class="tab-content" id="customContent">
@@ -248,31 +306,31 @@
         <div id="seg-1" class="segment segment-h" data-index="1"></div>
         
         <!-- Bottom segments -->
-        <div id="seg-2" class="segment segment-h" data-index="2"></div>
-        <div id="seg-3" class="segment segment-h" data-index="3"></div>
+        <div id="seg-2" class="segment segment-h" data-index="5"></div>
+        <div id="seg-3" class="segment segment-h" data-index="4"></div>
         
         <!-- Left segments -->
-        <div id="seg-4" class="segment segment-v" data-index="4"></div>
-        <div id="seg-5" class="segment segment-v" data-index="5"></div>
+        <div id="seg-4" class="segment segment-v" data-index="9"></div>
+        <div id="seg-5" class="segment segment-v" data-index="6"></div>
         
         <!-- Middle segments -->
-        <div id="seg-6" class="segment segment-h" data-index="6"></div>
-        <div id="seg-7" class="segment segment-h" data-index="7"></div>
+        <div id="seg-6" class="segment segment-h" data-index="2"></div>
+        <div id="seg-7" class="segment segment-h" data-index="3"></div>
         
         <!-- Right segments -->
         <div id="seg-8" class="segment segment-v" data-index="8"></div>
-        <div id="seg-9" class="segment segment-v" data-index="9"></div>
+        <div id="seg-9" class="segment segment-v" data-index="11"></div>
         
         <!-- Diagonal segments -->
-        <div id="seg-10" class="segment segment-d" data-index="10"></div>
-        <div id="seg-11" class="segment segment-d" data-index="11"></div>
-        <div id="seg-12" class="segment segment-d" data-index="12"></div>
-        <div id="seg-13" class="segment segment-d" data-index="13"></div>
+        <div id="seg-10" class="segment segment-d" data-index="12"></div>
+        <div id="seg-11" class="segment segment-d" data-index="13"></div>
+        <div id="seg-12" class="segment segment-d" data-index="14"></div>
+        <div id="seg-13" class="segment segment-d" data-index="15"></div>
         
         <!-- Center cross segments -->
         
-        <div id="seg-15" class="segment segment-v" data-index="15"></div>
-        <div id="seg-14" class="segment segment-v" data-index="14"></div>
+        <div id="seg-15" class="segment segment-v" data-index="7"></div>
+        <div id="seg-14" class="segment segment-v" data-index="10"></div>
       </div>
       
       <div class="segment-controls">
@@ -310,6 +368,9 @@
     const customContent = document.getElementById('customContent');
     const patternPreview = document.getElementById('patternPreview');
     const clearSegmentsButton = document.getElementById('clearSegments');
+    const scrollSpeed = document.getElementById('scrollSpeed');
+    const speedValue = document.getElementById('speedValue');
+    const speedControl = document.getElementById('speedControl');
     
     // Validate input text
     function validateInput() {
@@ -392,6 +453,20 @@
       patternPreview.textContent = currentPattern.join('');
     }
 
+    // Show/hide scroll speed control based on text mode selection
+    document.querySelectorAll('input[name="textMode"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        speedControl.style.display = radio.value === 'scroll' ? 'block' : 'none';
+        document.querySelector('.display-selector').style.display = 
+          radio.value === 'scroll' ? 'none' : 'block';
+      });
+    });
+    
+    // Update speed value display
+    scrollSpeed.addEventListener('input', function() {
+      speedValue.textContent = this.value;
+    });
+
     connectButton.addEventListener('click', async () => {
       try {
         port = await navigator.serial.requestPort();
@@ -418,14 +493,26 @@
       let formatted;
       
       if (textContent.classList.contains('active')) {
-        // Send text mode
+        // Text mode
         const text = textInput.value.trim().toUpperCase();
         if (!isTextValid) return; // Extra check
-        formatted = `${text}|${color}\n`;
+        
+        const textMode = document.querySelector('input[name="textMode"]:checked').value;
+        
+        if (textMode === 'scroll') {
+          // Scrolling text mode across both displays
+          const speed = scrollSpeed.value;
+          formatted = `SCROLL|${text}|${color}|${speed}\n`;
+        } else {
+          // Static text mode on a single display
+          const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
+          formatted = `${text}|${color}|${displayIndex}\n`;
+        }
       } else {
-        // Send custom pattern mode
+        // Custom pattern mode
+        const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
         const pattern = currentPattern.join('');
-        formatted = `CUSTOM|${pattern}|${color}\n`;
+        formatted = `CUSTOM|${pattern}|${color}|${displayIndex}\n`;
       }
 
       const encoder = new TextEncoder();

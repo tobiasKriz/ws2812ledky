@@ -2,7 +2,7 @@
 
 #define LED_PIN     5
 #define NUM_LEDS    64  // Doubled from 32 to support two displays
-#define BRIGHTNESS   
+#define BRIGHTNESS  100
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 

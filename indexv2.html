@@ -222,15 +222,6 @@
       min-height: 1.2rem;
     }
 
-    /* Display selector style */
-    .display-selector {
-      margin-bottom: 1rem;
-    }
-    
-    .display-selector label {
-      margin-right: 1rem;
-    }
-
     /* Text mode toggle style */
     .text-mode-toggle {
       margin-bottom: 1rem;
@@ -251,24 +242,126 @@
       text-align: center;
       font-weight: bold;
     }
+
+    /* Animation controls style */
+    .animation-controls {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background-color: #f8f8f8;
+    }
+    
+    .animation-controls h3 {
+      margin-top: 0;
+    }
+    
+    .animation-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .feature-button {
+      padding: 0.5rem;
+      background-color: #34a1eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    
+    .feature-button:hover {
+      background-color: #1c7fcf;
+    }
+
+    /* Repetition controls */
+    .repetition-control {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .repetition-input {
+      width: 60px;
+      text-align: center;
+    }
+    
+    .repetition-button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .repetition-button.active {
+      background-color: #28a745;
+    }
+
+    .stop-button {
+      background-color: #dc3545;
+      color: white;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    
+    .stop-button:hover {
+      background-color: #bd2130;
+    }
+    
+    .effects-section {
+      border-top: 1px solid #ddd;
+      margin-top: 1rem;
+      padding-top: 1rem;
+    }
+    
+    .effect-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    /* Add styles for connection buttons group */
+    .connection-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .connection-controls button {
+      flex: 1;
+    }
+    
+    #disconnectButton {
+      background-color: #6c757d;
+      display: none;
+    }
+    
+    #disconnectButton:hover {
+      background-color: #5a6268;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Serial Sender</h2>
     
+    <div class="connection-controls">
+      <button id="connectButton">Connect Serial</button>
+      <button id="disconnectButton">Disconnect</button>
+    </div>
+    
     <div class="tabs">
       <div class="tab active" id="textTab">Text Mode</div>
       <div class="tab" id="customTab">Custom Character</div>
-    </div>
-    
-    <!-- Add display selector -->
-    <div class="display-selector">
-      <label>Select Display:</label>
-      <input type="radio" id="display0" name="displaySelect" value="0" checked>
-      <label for="display0">Display 1</label>
-      <input type="radio" id="display1" name="displaySelect" value="1">
-      <label for="display1">Display 2</label>
     </div>
     
     <div class="tab-content active" id="textContent">
@@ -276,24 +369,41 @@
       <input type="text" id="textInput" placeholder="Enter text (e.g. HELLO)">
       <div id="textError" class="error-message"></div>
       
-      <!-- Add text mode toggle -->
+      <div id="colorSection">
+        <label for="colorInput">Color</label>
+        <input type="color" id="colorInput" value="#ff0000">
+      </div>
+      
       <div class="text-mode-toggle">
         <div>
-          <input type="radio" id="staticText" name="textMode" value="static" checked>
-          <label for="staticText">Static Text</label>
-        </div>
-        <div>
-          <input type="radio" id="scrollingText" name="textMode" value="scroll">
-          <label for="scrollingText">Scrolling Text</label>
+          <h4>Text Repetition</h4>
         </div>
       </div>
       
-      <!-- Add scroll speed control (only visible when scrolling is selected) -->
-      <div class="speed-control" id="speedControl" style="display: none;">
+      <div class="repetition-control">
+        <button class="repetition-button active" id="endlessBtn">Endless</button>
+        <button class="repetition-button" id="countBtn">Count</button>
+        <input type="number" id="repeatCount" class="repetition-input" value="1" min="1" max="100" disabled>
+      </div>
+      
+      <div class="speed-control" id="speedControl">
         <label for="scrollSpeed">Scroll Speed:</label>
         <input type="range" id="scrollSpeed" min="50" max="500" value="150">
         <div class="speed-value"><span id="speedValue">150</span> ms</div>
       </div>
+      
+      <div class="effects-section">
+        <h4>Effects</h4>
+        <div class="effect-buttons">
+          <button class="feature-button" id="normalScrollBtn">Scroll Text</button>
+          <button class="feature-button" id="rainbowScrollBtn">Rainbow Text</button>
+          <button class="feature-button" id="waveBtn">Wave</button>
+          <button class="feature-button" id="spinnerBtn">Spinner</button>
+          <button class="feature-button" id="flashBtn">Flash</button>
+        </div>
+      </div>
+      
+      <button class="stop-button" id="stopButton">STOP ALL ANIMATIONS</button>
     </div>
     
     <div class="tab-content" id="customContent">
@@ -340,13 +450,17 @@
       <div class="pattern-preview">
         Pattern: <span id="patternPreview">0000000000000000</span>
       </div>
+      
+      <div class="display-selector">
+        <label>Select Display:</label>
+        <input type="radio" id="display0" name="displaySelect" value="0" checked>
+        <label for="display0">Display 1</label>
+        <input type="radio" id="display1" name="displaySelect" value="1">
+        <label for="display1">Display 2</label>
+      </div>
+      
+      <button id="sendButton" disabled>Send Custom Pattern</button>
     </div>
-    
-    <label for="colorInput">Color</label>
-    <input type="color" id="colorInput" value="#ff0000">
-
-    <button id="connectButton">Connect Serial</button>
-    <button id="sendButton" disabled>Send</button>
   </div>
 
   <script>
@@ -356,6 +470,7 @@
     let isTextValid = true;
 
     const connectButton = document.getElementById('connectButton');
+    const disconnectButton = document.getElementById('disconnectButton');
     const sendButton = document.getElementById('sendButton');
     const textInput = document.getElementById('textInput');
     const textError = document.getElementById('textError');
@@ -371,6 +486,19 @@
     const scrollSpeed = document.getElementById('scrollSpeed');
     const speedValue = document.getElementById('speedValue');
     const speedControl = document.getElementById('speedControl');
+    
+    // Repetition controls
+    const endlessBtn = document.getElementById('endlessBtn');
+    const countBtn = document.getElementById('countBtn');
+    const repeatCount = document.getElementById('repeatCount');
+    
+    // Effect buttons
+    const normalScrollBtn = document.getElementById('normalScrollBtn');
+    const rainbowScrollBtn = document.getElementById('rainbowScrollBtn');
+    const waveBtn = document.getElementById('waveBtn');
+    const spinnerBtn = document.getElementById('spinnerBtn');
+    const flashBtn = document.getElementById('flashBtn');
+    const stopButton = document.getElementById('stopButton');
     
     // Validate input text
     function validateInput() {
@@ -394,17 +522,6 @@
         textInput.classList.remove('invalid');
         isTextValid = true;
       }
-      
-      // Update send button state
-      updateSendButtonState();
-    }
-    
-    // Update send button enabled/disabled state
-    function updateSendButtonState() {
-      if (sendButton.disabled === true && connectButton.disabled === true) {
-        // Connection is established, update based on input validity
-        sendButton.disabled = !isTextValid && textContent.classList.contains('active');
-      }
     }
     
     // Add input validation event
@@ -416,7 +533,6 @@
       customTab.classList.remove('active');
       textContent.classList.add('active');
       customContent.classList.remove('active');
-      updateSendButtonState();
     });
     
     customTab.addEventListener('click', () => {
@@ -428,6 +544,19 @@
       if (connectButton.disabled) {
         sendButton.disabled = false;
       }
+    });
+
+    // Setup repetition control events
+    endlessBtn.addEventListener('click', () => {
+      endlessBtn.classList.add('active');
+      countBtn.classList.remove('active');
+      repeatCount.disabled = true;
+    });
+    
+    countBtn.addEventListener('click', () => {
+      countBtn.classList.add('active');
+      endlessBtn.classList.remove('active');
+      repeatCount.disabled = false;
     });
     
     // Set up segment click handlers
@@ -453,20 +582,11 @@
       patternPreview.textContent = currentPattern.join('');
     }
 
-    // Show/hide scroll speed control based on text mode selection
-    document.querySelectorAll('input[name="textMode"]').forEach(radio => {
-      radio.addEventListener('change', function() {
-        speedControl.style.display = radio.value === 'scroll' ? 'block' : 'none';
-        document.querySelector('.display-selector').style.display = 
-          radio.value === 'scroll' ? 'none' : 'block';
-      });
-    });
-    
     // Update speed value display
     scrollSpeed.addEventListener('input', function() {
       speedValue.textContent = this.value;
     });
-
+    
     connectButton.addEventListener('click', async () => {
       try {
         port = await navigator.serial.requestPort();
@@ -474,47 +594,132 @@
         writer = port.writable.getWriter();
         connectButton.textContent = "Connected";
         connectButton.disabled = true;
-        
-        // Enable send button only if text is valid or in custom mode
-        if (textContent.classList.contains('active')) {
-          sendButton.disabled = !isTextValid;
-        } else {
-          sendButton.disabled = false;
-        }
+        disconnectButton.style.display = 'block'; // Show disconnect button
       } catch (err) {
         alert('Connection failed: ' + err);
       }
+    });
+    
+    // Add disconnect button handler
+    disconnectButton.addEventListener('click', async () => {
+      if (writer) {
+        writer.releaseLock();
+        writer = null;
+      }
+      if (port) {
+        await port.close();
+        port = null;
+      }
+      connectButton.textContent = "Connect Serial";
+      connectButton.disabled = false;
+      disconnectButton.style.display = 'none';
+      sendButton.disabled = true;
     });
 
     sendButton.addEventListener('click', async () => {
       if (!writer) return;
 
       const color = colorInput.value.substring(1); // remove the #
-      let formatted;
       
-      if (textContent.classList.contains('active')) {
-        // Text mode
-        const text = textInput.value.trim().toUpperCase();
-        if (!isTextValid) return; // Extra check
-        
-        const textMode = document.querySelector('input[name="textMode"]:checked').value;
-        
-        if (textMode === 'scroll') {
-          // Scrolling text mode across both displays
-          const speed = scrollSpeed.value;
-          formatted = `SCROLL|${text}|${color}|${speed}\n`;
-        } else {
-          // Static text mode on a single display
-          const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
-          formatted = `${text}|${color}|${displayIndex}\n`;
-        }
-      } else {
+      if (customContent.classList.contains('active')) {
         // Custom pattern mode
         const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
         const pattern = currentPattern.join('');
-        formatted = `CUSTOM|${pattern}|${color}|${displayIndex}\n`;
+        const formatted = `CUSTOM|${pattern}|${color}|${displayIndex}\n`;
+        
+        const encoder = new TextEncoder();
+        await writer.write(encoder.encode(formatted));
       }
-
+    });
+    
+    // Add stop button handler
+    stopButton.addEventListener('click', async () => {
+      if (!writer) return;
+      
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode("STOP\n"));
+    });
+    
+    // Normal Scroll Text button
+    normalScrollBtn.addEventListener('click', async () => {
+      if (!writer) return;
+      
+      const text = textInput.value.trim().toUpperCase();
+      if (!text || !isTextValid) {
+        alert('Please enter valid text');
+        return;
+      }
+      
+      const color = colorInput.value.substring(1);
+      const speed = scrollSpeed.value;
+      const isEndless = endlessBtn.classList.contains('active');
+      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
+      
+      const formatted = `SCROLL|${text}|${color}|${speed}|${repeats}\n`;
+      
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(formatted));
+    });
+    
+    // Rainbow Text button with repetition support
+    rainbowScrollBtn.addEventListener('click', async () => {
+      if (!writer) return;
+      
+      const text = textInput.value.trim();
+      if (!text || !isTextValid) {
+        alert('Please enter valid text');
+        return;
+      }
+      
+      const speed = scrollSpeed.value;
+      const isEndless = endlessBtn.classList.contains('active');
+      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
+      
+      const formatted = `RAINBOW|${text}|${speed}|${repeats}\n`;
+      
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(formatted));
+    });
+    
+    // Animation buttons
+    waveBtn.addEventListener('click', async () => {
+      if (!writer) return;
+      
+      const color = colorInput.value.substring(1);
+      const speed = scrollSpeed.value;
+      const isEndless = endlessBtn.classList.contains('active');
+      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
+      
+      const formatted = `ANIMATE|WAVE|${color}|${speed}|${repeats}\n`;
+      
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(formatted));
+    });
+    
+    spinnerBtn.addEventListener('click', async () => {
+      if (!writer) return;
+      
+      const color = colorInput.value.substring(1);
+      const speed = scrollSpeed.value;
+      const isEndless = endlessBtn.classList.contains('active');
+      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
+      
+      const formatted = `ANIMATE|SPINNER|${color}|${speed}|${repeats}\n`;
+      
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(formatted));
+    });
+    
+    flashBtn.addEventListener('click', async () => {
+      if (!writer) return;
+      
+      const color = colorInput.value.substring(1);
+      const speed = scrollSpeed.value;
+      const isEndless = endlessBtn.classList.contains('active');
+      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
+      
+      const formatted = `ANIMATE|FLASH|${color}|${speed}|${repeats}\n`;
+      
       const encoder = new TextEncoder();
       await writer.write(encoder.encode(formatted));
     });

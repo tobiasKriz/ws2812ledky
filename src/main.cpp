@@ -72,13 +72,22 @@ int numbers[37][16] = {
 };
 
 String incomingText = "";
+String commandBuffer = ""; // Add a buffer for STOP commands
 
-// Function prototypes
+// Function prototypes (updated)
 void displayCharacter(char c, CRGB color, int displayIndex);
 void displayText(String text, CRGB color, int displayIndex);
 void displayCustomPattern(int customPattern[16], CRGB color, int displayIndex);
 void scrollText(String text, CRGB color, int displayIndex, int scrollSpeed);
-void scrollTextAcrossDisplays(String text, CRGB color, int scrollSpeed);
+void scrollTextAcrossDisplays(String text, CRGB color, int scrollSpeed, int repeatCount = 1);
+void rainbowText(String text, int scrollSpeed, int repeatCount = 1);
+void showAnimation(String animationType, CRGB color, int animSpeed = 100, int repeatCount = 1);
+CRGB getHueColor(uint8_t hue);
+void stopAllAnimations();
+void processEmergencyStop();
+
+volatile bool stopFlag = false;
+volatile bool emergencyStop = false; // New flag for immediate stop
 
 void setup() {
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -151,6 +160,64 @@ void displayText(String text, CRGB color, int displayIndex = 0) {
   }
 }
 
+// Enhanced delay function that's more responsive to STOP commands
+bool delayWithStopCheck(int delayMs) {
+  const int checkInterval = 5; // Maximum time to wait before checking for commands (milliseconds)
+  unsigned long startTime = millis();
+  unsigned long endTime = startTime + delayMs;
+  
+  // Process any pending commands in the buffer first
+  if (commandBuffer == "STOP") {
+    emergencyStop = true;
+    stopFlag = true;
+    clearAll();
+    commandBuffer = ""; // Clear the buffer
+    return false;
+  }
+  
+  // Break up the delay into smaller chunks to check more frequently
+  while (millis() < endTime && !stopFlag && !emergencyStop) {
+    // Check for incoming commands
+    if (SerialBT.available()) {
+      // Process all available data
+      while (SerialBT.available()) {
+        char c = SerialBT.read();
+        if (c == '\n') {
+          // Complete command received
+          commandBuffer.trim();
+          if (commandBuffer == "STOP") {
+            emergencyStop = true;
+            stopFlag = true;
+            clearAll();
+            commandBuffer = ""; // Clear after processing
+            return false;
+          }
+          commandBuffer = ""; // Reset for new commands
+        } else {
+          // Accumulate characters
+          commandBuffer += c;
+        }
+      }
+    }
+    
+    // Brief delay to allow system to process other tasks
+    delay(min(checkInterval, (int)(endTime - millis())));
+    yield(); // Allow the system to handle other tasks
+  }
+  
+  return !stopFlag && !emergencyStop;
+}
+
+// Add emergency stop function that aborts all operations
+void processEmergencyStop() {
+  if (emergencyStop) {
+    clearAll();
+    stopFlag = false;
+    emergencyStop = false;
+    Serial.println("Emergency stop processed");
+  }
+}
+
 // New function for scrolling text across displays
 void scrollText(String text, CRGB color, int displayIndex = 0, int scrollSpeed = 150) {
   if (text.length() == 0) return;
@@ -176,8 +243,61 @@ void scrollText(String text, CRGB color, int displayIndex = 0, int scrollSpeed =
   }
 }
 
-// Function to scroll text across both displays as one continuous display
-void scrollTextAcrossDisplays(String text, CRGB color, int scrollSpeed = 150) {
+// Fix the scrollTextAcrossDisplays function
+void scrollTextAcrossDisplays(String text, CRGB color, int scrollSpeed, int repeatCount) {
+  if (text.length() == 0) return;
+  stopFlag = false;
+  emergencyStop = false;
+  
+  text.toUpperCase();
+  text = "  " + text + "  ";
+  
+  int virtualLength = text.length();
+  int currentRepeat = 0;
+  
+  while ((currentRepeat < repeatCount || repeatCount == -1) && !stopFlag && !emergencyStop) {
+    // Check for stop command at the start of each cycle
+    if (SerialBT.available()) {
+      // Read character by character instead of using readStringUntil
+      String command = "";
+      while (SerialBT.available()) {
+        char c = SerialBT.read();
+        if (c == '\n') break;
+        command += c;
+      }
+      
+      command.trim(); // Trim first
+      if (command == "STOP") { // Then compare
+        emergencyStop = true;
+        clearAll();
+        break;
+      }
+    }
+    
+    for (int startChar = 0; startChar < virtualLength && !stopFlag && !emergencyStop; startChar++) {
+      
+      
+      if (startChar < virtualLength) {
+        displayCharacter(text.charAt(startChar), color, 0);
+      }
+      
+      if (startChar + 1 < virtualLength) {
+        displayCharacter(text.charAt(startChar + 1), color, 1);
+      }
+      
+      if (!delayWithStopCheck(scrollSpeed)) {
+        return; // Stop immediately if requested
+      }
+    }
+    
+    if (repeatCount != -1) {
+      currentRepeat++;
+    }
+  }
+}
+
+ // Non-strobing rainbow text function - completely rewritten to avoid clearing the display
+void rainbowText(String text, int scrollSpeed, int repeatCount) {
   if (text.length() == 0) return;
   
   // Convert to uppercase
@@ -187,33 +307,252 @@ void scrollTextAcrossDisplays(String text, CRGB color, int scrollSpeed = 150) {
   text = "  " + text + "  ";
   
   int virtualLength = text.length();
+  int currentRepeat = 0;
   
-  // Scroll through the text, moving across both displays
-  for (int startChar = 0; startChar < virtualLength; startChar++) {
-    // Clear both displays
-    clearAll();
-    
-    // Show current character on first display
-    if (startChar < virtualLength) {
-      displayCharacter(text.charAt(startChar), color, 0);
+  // Reset stop flag
+  stopFlag = false;
+  emergencyStop = false;
+  
+  // Initialize hue outside the loop so it's maintained across repetitions
+  uint8_t hue = 0;
+  int displayDist = 64; // Color distance between displays
+  int hueDelta = 2;     // How much to change the hue per update
+  
+  // Add support for repetition like in scrollTextAcrossDisplays
+  while ((currentRepeat < repeatCount || repeatCount == -1) && !stopFlag && !emergencyStop) {
+    // Process each character position
+    for (int startChar = 0; startChar < virtualLength && !stopFlag && !emergencyStop; startChar++) {
+      // Initial character setup (done once per position to avoid flickering)
+      if (startChar < virtualLength) {
+        displayCharacter(text.charAt(startChar), getHueColor(hue), 0);
+      }
+      
+      if (startChar + 1 < virtualLength) {
+        displayCharacter(text.charAt(startChar + 1), getHueColor(hue + displayDist), 1);
+      }
+      
+      // Instead of multiple refreshes with clearing, stay on this character
+      // and just update the color in place for a smoother transition
+      int colorUpdates = scrollSpeed / 15;  // Number of color updates while showing the same character
+      
+      for (int i = 0; i < colorUpdates && !stopFlag && !emergencyStop; i++) {
+        // Update color of existing LEDs without redrawing the whole character
+        int currentIndex;
+        if (text.charAt(startChar) == ' ') currentIndex = 36;
+        else if (text.charAt(startChar) >= '0' && text.charAt(startChar) <= '9') currentIndex = text.charAt(startChar) - '0';
+        else if (text.charAt(startChar) >= 'A' && text.charAt(startChar) <= 'Z') currentIndex = text.charAt(startChar) - 'A' + 10;
+        
+        // Update first display with new hue
+        CRGB color1 = getHueColor(hue);
+        for (int seg = 0; seg < SEGMENT_COUNT; seg++) {
+          if (numbers[currentIndex][seg]) {
+            for (int j = 0; j < LEDS_PER_SEGMENT; j++) {
+              leds[segmentMap[0][seg][j]] = color1;
+            }
+          }
+        }
+        
+        // Update second display with new hue (if showing a character)
+        if (startChar + 1 < virtualLength) {
+          if (text.charAt(startChar + 1) == ' ') currentIndex = 36;
+          else if (text.charAt(startChar + 1) >= '0' && text.charAt(startChar + 1) <= '9') currentIndex = text.charAt(startChar + 1) - '0';
+          else if (text.charAt(startChar + 1) >= 'A' && text.charAt(startChar + 1) <= 'Z') currentIndex = text.charAt(startChar + 1) - 'A' + 10;
+          
+          CRGB color2 = getHueColor(hue + displayDist);
+          for (int seg = 0; seg < SEGMENT_COUNT; seg++) {
+            if (numbers[currentIndex][seg]) {
+              for (int j = 0; j < LEDS_PER_SEGMENT; j++) {
+                leds[segmentMap[1][seg][j]] = color2;
+              }
+            }
+          }
+        }
+        
+        FastLED.show();
+        hue += hueDelta; // Increment hue for color cycling
+        
+        if (!delayWithStopCheck(15)) { // Short delay for color updates
+          return;
+        }
+      }
     }
     
-    // Show next character on second display if available
-    if (startChar + 1 < virtualLength) {
-      displayCharacter(text.charAt(startChar + 1), color, 1);
+    // Increment repeat counter if we're not in endless mode
+    if (repeatCount != -1) {
+      currentRepeat++;
     }
-    
-    delay(scrollSpeed);
   }
 }
 
+// Function to get RGB color from hue value
+CRGB getHueColor(uint8_t hue) {
+  // Convert hue to RGB using FastLED's HSV to RGB conversion
+  CHSV hsv(hue, 240, 255);
+  CRGB rgb;
+  hsv2rgb_rainbow(hsv, rgb);
+  return rgb;
+}
+
+// Modified animation function to use the repeat count
+void showAnimation(String animationType, CRGB color, int animSpeed, int repeatCount) {
+  // Reset stop flag
+  stopFlag = false;
+  emergencyStop = false;
+  
+  // Default to 1 repeat if none specified or invalid
+  if (repeatCount < -1) repeatCount = 1;
+  int currentRepeat = 0;
+  
+  // Loop through repeats
+  while ((currentRepeat < repeatCount || repeatCount == -1) && !stopFlag && !emergencyStop) {
+    if (animationType.equals("WAVE")) {
+      // Wave animation - segments light up in sequence
+      for (int cycle = 0; cycle < 3 && !stopFlag && !emergencyStop; cycle++) {
+        for (int segment = 0; segment < SEGMENT_COUNT && !stopFlag && !emergencyStop; segment++) {
+          clearAll();
+          for (int display = 0; display < DISPLAY_COUNT; display++) {
+            for (int i = 0; i < LEDS_PER_SEGMENT; i++) {
+              leds[segmentMap[display][segment][i]] = color;
+            }
+          }
+          FastLED.show();
+          if (!delayWithStopCheck(animSpeed)) return;
+        }
+      }
+    } 
+    else if (animationType.equals("SPINNER")) {
+      // Spinning effect - rotating segment around the display
+      int segments[] = {0, 1, 8, 11, 5, 4, 9, 6}; // Segments to light in sequence
+      for (int cycle = 0; cycle < 3 && !stopFlag && !emergencyStop; cycle++) { // Reduced from 5 cycles to 3
+        for (int i = 0; i < 8 && !stopFlag && !emergencyStop; i++) {
+          clearAll();
+          for (int display = 0; display < DISPLAY_COUNT; display++) {
+            for (int j = 0; j < LEDS_PER_SEGMENT; j++) {
+              leds[segmentMap[display][segments[i]][j]] = color;
+            }
+          }
+          FastLED.show();
+          if (!delayWithStopCheck(animSpeed)) return;
+        }
+      }
+    }
+    else if (animationType.equals("FLASH")) {
+      // Flash animation - all LEDs flash together
+      for (int flash = 0; flash < 5 && !stopFlag && !emergencyStop; flash++) {
+        fill_solid(leds, NUM_LEDS, color);
+        FastLED.show();
+        if (!delayWithStopCheck(animSpeed)) return;
+        
+        clearAll();
+        if (!delayWithStopCheck(animSpeed)) return;
+      }
+    }
+    
+    // Increment repeat counter if we're not in endless mode
+    if (repeatCount != -1) {
+      currentRepeat++;
+    }
+  }
+  
+  clearAll();
+}
+
+// Pre-defined animations
+void showAnimation(String animationType, CRGB color, int animSpeed) {
+  // Reset stop flag
+  stopFlag = false;
+  emergencyStop = false;
+  
+  if (animationType.equals("WAVE")) {
+    // Wave animation - segments light up in sequence
+    for (int cycle = 0; cycle < 3 && !stopFlag && !emergencyStop; cycle++) {
+      for (int segment = 0; segment < SEGMENT_COUNT && !stopFlag && !emergencyStop; segment++) {
+        clearAll();
+        for (int display = 0; display < DISPLAY_COUNT; display++) {
+          for (int i = 0; i < LEDS_PER_SEGMENT; i++) {
+            leds[segmentMap[display][segment][i]] = color;
+          }
+        }
+        FastLED.show();
+        if (!delayWithStopCheck(animSpeed)) return;
+      }
+    }
+  } 
+  else if (animationType.equals("SPINNER")) {
+    // Spinning effect - rotating segment around the display
+    int segments[] = {0, 1, 8, 11, 5, 4, 9, 6}; // Segments to light in sequence
+    for (int cycle = 0; cycle < 5 && !stopFlag && !emergencyStop; cycle++) {
+      for (int i = 0; i < 8 && !stopFlag && !emergencyStop; i++) {
+        clearAll();
+        for (int display = 0; display < DISPLAY_COUNT; display++) {
+          for (int j = 0; j < LEDS_PER_SEGMENT; j++) {
+            leds[segmentMap[display][segments[i]][j]] = color;
+          }
+        }
+        FastLED.show();
+        if (!delayWithStopCheck(animSpeed)) return;
+      }
+    }
+  }
+  else if (animationType.equals("FLASH")) {
+    // Flash animation - all LEDs flash together
+    for (int flash = 0; flash < 5 && !stopFlag && !emergencyStop; flash++) {
+      fill_solid(leds, NUM_LEDS, color);
+      FastLED.show();
+      if (!delayWithStopCheck(animSpeed)) return;
+      
+      clearAll();
+      if (!delayWithStopCheck(animSpeed)) return;
+    }
+  }
+  
+  clearAll();
+}
+
+// Make the stopAllAnimations function more forceful
+void stopAllAnimations() {
+  stopFlag = true;
+  emergencyStop = true;
+  delay(10); // Brief delay to let things settle
+  clearAll();
+}
+
+// Modified loop function to more aggressively check for STOP commands
 void loop() {
+  // Process emergency stop signals
+  processEmergencyStop();
+  
+  // Check for STOP command in buffer before processing other commands
+  if (commandBuffer == "STOP") {
+    Serial.println("STOP command in buffer processed");
+    emergencyStop = true;
+    stopFlag = true;
+    clearAll();
+    commandBuffer = "";
+  }
+  
+  // Process incoming serial data
   while (SerialBT.available()) {
     char c = SerialBT.read();
+    
+    // If we receive a newline, process the complete command
     if (c == '\n') {
       incomingText.trim();
       
-      // Check if this is a custom pattern command
+      // Priority handling for STOP command
+      if (incomingText == "STOP") {
+        Serial.println("STOP command received");
+        // Stop everything immediately - more aggressive action
+        emergencyStop = true;
+        stopFlag = true;
+        clearAll();
+        FastLED.show(); // Force immediate update of LEDs
+        incomingText = "";
+        commandBuffer = ""; // Clear any buffered commands
+        continue;
+      }
+      
+      // Regular command processing
       if (incomingText.startsWith("CUSTOM|")) {
         int firstSeparator = incomingText.indexOf('|');
         int secondSeparator = incomingText.indexOf('|', firstSeparator + 1);
@@ -243,7 +582,7 @@ void loop() {
           displayCustomPattern(customPattern, color, displayIndex);
         }
       } 
-      // Check if this is a scrolling text command
+      // Check if this is a scrolling text command with repetition
       else if (incomingText.startsWith("SCROLL|")) {
         int firstSeparator = incomingText.indexOf('|');
         int secondSeparator = incomingText.indexOf('|', firstSeparator + 1);
@@ -254,44 +593,111 @@ void loop() {
           String text = incomingText.substring(firstSeparator + 1, secondSeparator);
           String hexColor;
           int scrollSpeed = 150; // Default speed
+          int repeatCount = 1;   // Default repeat count (1 = once)
           
           if (thirdSeparator != -1) {
             hexColor = incomingText.substring(secondSeparator + 1, thirdSeparator);
-            scrollSpeed = incomingText.substring(thirdSeparator + 1).toInt();
+            
+            if (fourthSeparator != -1) {
+              scrollSpeed = incomingText.substring(thirdSeparator + 1, fourthSeparator).toInt();
+              repeatCount = incomingText.substring(fourthSeparator + 1).toInt();
+            } else {
+              scrollSpeed = incomingText.substring(thirdSeparator + 1).toInt();
+            }
+            
             if (scrollSpeed < 50) scrollSpeed = 50;
           } else {
             hexColor = incomingText.substring(secondSeparator + 1);
           }
           
           CRGB color = parseHexColor(hexColor);
-          Serial.println("Scrolling text across displays: " + text + " | #" + hexColor + " with speed " + String(scrollSpeed));
-          scrollTextAcrossDisplays(text, color, scrollSpeed);
+          Serial.println("Scrolling text across displays: " + text + " | #" + hexColor + 
+                         " with speed " + String(scrollSpeed) + 
+                         " repeats " + (repeatCount == -1 ? "endless" : String(repeatCount)));
+          scrollTextAcrossDisplays(text, color, scrollSpeed, repeatCount);
         }
-      } else {
-        // Handle regular text|color command
+      } 
+      // Rainbow text effect with repetition
+      else if (incomingText.startsWith("RAINBOW|")) {
         int firstSeparator = incomingText.indexOf('|');
+        int secondSeparator = incomingText.indexOf('|', firstSeparator + 1);
+        int thirdSeparator = incomingText.indexOf('|', secondSeparator + 1);
+        
         if (firstSeparator != -1) {
-          String text = incomingText.substring(0, firstSeparator);
-          String hexColor;
-          int displayIndex = 0; // Default to first display
+          String text = incomingText.substring(firstSeparator + 1);
+          int scrollSpeed = 150; // Default speed
+          int repeatCount = 1;   // Default repeat count
           
-          int secondSeparator = incomingText.indexOf('|', firstSeparator + 1);
           if (secondSeparator != -1) {
-            hexColor = incomingText.substring(firstSeparator + 1, secondSeparator);
-            displayIndex = incomingText.substring(secondSeparator + 1).toInt();
-            if (displayIndex < 0 || displayIndex >= DISPLAY_COUNT) displayIndex = 0;
+            text = incomingText.substring(firstSeparator + 1, secondSeparator);
+            
+            if (thirdSeparator != -1) {
+              scrollSpeed = incomingText.substring(secondSeparator + 1, thirdSeparator).toInt();
+              repeatCount = incomingText.substring(thirdSeparator + 1).toInt();
+            } else {
+              scrollSpeed = incomingText.substring(secondSeparator + 1).toInt();
+            }
+            
+            if (scrollSpeed < 50) scrollSpeed = 50;
+          }
+          
+          Serial.println("Rainbow text: " + text + " with speed " + String(scrollSpeed) + 
+                         " repeats " + (repeatCount == -1 ? "endless" : String(repeatCount)));
+          rainbowText(text, scrollSpeed, repeatCount);
+        }
+      }
+      
+      // Pre-defined animations
+      else if (incomingText.startsWith("ANIMATE|")) {
+        int firstSeparator = incomingText.indexOf('|');
+        int secondSeparator = incomingText.indexOf('|', firstSeparator + 1);
+        int thirdSeparator = incomingText.indexOf('|', secondSeparator + 1);
+        int fourthSeparator = incomingText.indexOf('|', thirdSeparator + 1);
+        
+        if (secondSeparator != -1) {
+          String animType = incomingText.substring(firstSeparator + 1, secondSeparator);
+          String hexColor;
+          int animSpeed = 100; // Default speed
+          int repeatCount = 1; // Default repeat count
+          
+          if (thirdSeparator != -1) {
+            hexColor = incomingText.substring(secondSeparator + 1, thirdSeparator);
+            
+            if (fourthSeparator != -1) {
+              animSpeed = incomingText.substring(thirdSeparator + 1, fourthSeparator).toInt();
+              repeatCount = incomingText.substring(fourthSeparator + 1).toInt();
+            } else {
+              animSpeed = incomingText.substring(thirdSeparator + 1).toInt();
+            }
           } else {
-            hexColor = incomingText.substring(firstSeparator + 1);
+            hexColor = incomingText.substring(secondSeparator + 1);
           }
           
           CRGB color = parseHexColor(hexColor);
-          Serial.println("Displaying: " + text + " | #" + hexColor + " on display " + String(displayIndex));
-          displayText(text, color, displayIndex);
+          Serial.println("Animation: " + animType + " with speed " + String(animSpeed) + 
+                        " repeats " + (repeatCount == -1 ? "endless" : String(repeatCount)));
+          showAnimation(animType, color, animSpeed, repeatCount);
         }
       }
+
       incomingText = "";
     } else {
       incomingText += c;
+      
+      // Special case: detect "STOP" even if not complete line
+      if (incomingText.endsWith("STOP")) {
+        Serial.println("Potential STOP detected");
+        commandBuffer = "STOP"; // Mark for potential processing
+      }
     }
+  }
+  
+  // Always check for STOP commands periodically even inside other operations
+  if (commandBuffer == "STOP") {
+    Serial.println("Buffered STOP command processed");
+    emergencyStop = true;
+    stopFlag = true;
+    clearAll();
+    commandBuffer = "";
   }
 }

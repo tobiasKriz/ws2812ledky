@@ -231,16 +231,38 @@
     
     .speed-control {
       margin-top: 0.5rem;
+      text-align: center;
     }
     
-    .speed-control input {
-      width: 100%;
-      margin-top: 0.5rem;
+    .speed-control label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .speed-control-inputs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .speed-control input[type="range"] {
+      width: 70%;
+      vertical-align: middle;
+      margin: 0;
+    }
+    
+    .speed-control input[type="number"] {
+      width: 20%;
+      padding: 0.3rem;
+      text-align: center;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin: 0;
     }
     
     .speed-control .speed-value {
-      text-align: center;
-      font-weight: bold;
+      display: none; /* Hide the old speed value display */
     }
 
     /* Animation controls style */
@@ -348,6 +370,33 @@
     #disconnectButton:hover {
       background-color: #5a6268;
     }
+
+    /* Add styles for status messages */
+    .status-message {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      text-align: center;
+      display: none;
+    }
+    
+    .status-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
   </style>
 </head>
 <body>
@@ -358,6 +407,9 @@
       <button id="connectButton">Connect Serial</button>
       <button id="disconnectButton">Disconnect</button>
     </div>
+    
+    <!-- Add status message display -->
+    <div id="statusMessage" class="status-message"></div>
     
     <div class="tabs">
       <div class="tab active" id="textTab">Text Mode</div>
@@ -388,8 +440,11 @@
       
       <div class="speed-control" id="speedControl">
         <label for="scrollSpeed">Scroll Speed:</label>
-        <input type="range" id="scrollSpeed" min="50" max="500" value="150">
-        <div class="speed-value"><span id="speedValue">150</span> ms</div>
+        <div class="speed-control-inputs">
+          <input type="range" id="scrollSpeed" min="1" max="1000" value="500">
+          <input type="number" id="scrollSpeedInput" min="1" max="1000" value="500">
+        </div>
+        <div class="speed-value"><span id="speedValue">500</span> ms</div>
       </div>
       
       <div class="effects-section">
@@ -459,107 +514,166 @@
         <label for="display1">Display 2</label>
       </div>
       
+      <div id="customColorSection">
+        <label for="customColorInput">Color</label>
+        <input type="color" id="customColorInput" value="#ff0000">
+      </div>
+      
       <button id="sendButton" disabled>Send Custom Pattern</button>
     </div>
   </div>
 
   <script>
-    let port;
-    let writer;
-    let currentPattern = Array(16).fill(0);
-    let isTextValid = true;
+  // Simplified global variables
+  let port, writer, reader, readingTask;
+  let currentPattern = Array(16).fill(0);
+  let isTextValid = true;
+  let isCommandInProgress = false;
 
-    const connectButton = document.getElementById('connectButton');
-    const disconnectButton = document.getElementById('disconnectButton');
-    const sendButton = document.getElementById('sendButton');
-    const textInput = document.getElementById('textInput');
-    const textError = document.getElementById('textError');
-    const colorInput = document.getElementById('colorInput');
-    
-    // New elements
-    const textTab = document.getElementById('textTab');
-    const customTab = document.getElementById('customTab');
-    const textContent = document.getElementById('textContent');
-    const customContent = document.getElementById('customContent');
-    const patternPreview = document.getElementById('patternPreview');
-    const clearSegmentsButton = document.getElementById('clearSegments');
-    const scrollSpeed = document.getElementById('scrollSpeed');
-    const speedValue = document.getElementById('speedValue');
-    const speedControl = document.getElementById('speedControl');
-    
-    // Repetition controls
-    const endlessBtn = document.getElementById('endlessBtn');
-    const countBtn = document.getElementById('countBtn');
-    const repeatCount = document.getElementById('repeatCount');
-    
-    // Effect buttons
-    const normalScrollBtn = document.getElementById('normalScrollBtn');
-    const rainbowScrollBtn = document.getElementById('rainbowScrollBtn');
-    const waveBtn = document.getElementById('waveBtn');
-    const spinnerBtn = document.getElementById('spinnerBtn');
-    const flashBtn = document.getElementById('flashBtn');
-    const stopButton = document.getElementById('stopButton');
-    
-    // Validate input text
-    function validateInput() {
-      const text = textInput.value.trim();
-      if (text === '') {
-        textError.textContent = '';
-        textInput.classList.remove('invalid');
-        isTextValid = true;
-        return;
-      }
-      
-      // Check if text contains only A-Z, 0-9, and spaces
-      const isValid = /^[A-Za-z0-9 ]+$/.test(text);
-      
-      if (!isValid) {
-        textError.textContent = 'Only A-Z, 0-9, and spaces are allowed';
-        textInput.classList.add('invalid');
-        isTextValid = false;
-      } else {
-        textError.textContent = '';
-        textInput.classList.remove('invalid');
-        isTextValid = true;
-      }
+  // DOM elements - using a more efficient approach
+  const elements = {
+    connectButton: document.getElementById('connectButton'),
+    disconnectButton: document.getElementById('disconnectButton'),
+    sendButton: document.getElementById('sendButton'),
+    textInput: document.getElementById('textInput'),
+    textError: document.getElementById('textError'),
+    colorInput: document.getElementById('colorInput'),
+    customColorInput: document.getElementById('customColorInput'),
+    statusMessage: document.getElementById('statusMessage'),
+    textTab: document.getElementById('textTab'),
+    customTab: document.getElementById('customTab'),
+    textContent: document.getElementById('textContent'),
+    customContent: document.getElementById('customContent'),
+    patternPreview: document.getElementById('patternPreview'),
+    clearSegments: document.getElementById('clearSegments'),
+    scrollSpeed: document.getElementById('scrollSpeed'),
+    scrollSpeedInput: document.getElementById('scrollSpeedInput'),
+    speedValue: document.getElementById('speedValue'),
+    endlessBtn: document.getElementById('endlessBtn'),
+    countBtn: document.getElementById('countBtn'),
+    repeatCount: document.getElementById('repeatCount'),
+    stopButton: document.getElementById('stopButton'),
+    normalScrollBtn: document.getElementById('normalScrollBtn'),
+    rainbowScrollBtn: document.getElementById('rainbowScrollBtn'),
+    waveBtn: document.getElementById('waveBtn'),
+    spinnerBtn: document.getElementById('spinnerBtn'),
+    flashBtn: document.getElementById('flashBtn')
+  };
+  
+  /**
+   * Simplified command sending function - removed error handling complexity
+   */
+  async function sendCommand(commandType, params = {}) {
+    if (!writer) {
+      showStatus('Not connected to device', 'error');
+      return false;
     }
     
-    // Add input validation event
-    textInput.addEventListener('input', validateInput);
+    try {
+      showStatus('Sending command...', 'pending');
+      
+      let commandString = commandType;
+      
+      // Add parameters to command string
+      if (Object.keys(params).length > 0) {
+        for (const key in params) {
+          if (params[key] !== undefined) {
+            commandString += `|${params[key]}`;
+          }
+        }
+      }
+      
+      commandString += '\n';
+      
+      console.log(`Sending: ${commandString.trim()}`);
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(commandString));
+      
+      showStatus(`Command sent successfully`, 'success');
+      return true;
+    } catch (error) {
+      console.error('Error sending command:', error);
+      showStatus(`Error: ${error.message}`, 'error');
+      return false;
+    }
+  }
+  
+  /**
+   * Display status message to the user
+   */
+  function showStatus(message, type) {
+    elements.statusMessage.textContent = message;
+    elements.statusMessage.className = 'status-message';
+    elements.statusMessage.classList.add(`status-${type}`);
+    elements.statusMessage.style.display = 'block';
     
-    // Set up tab switching
-    textTab.addEventListener('click', () => {
-      textTab.classList.add('active');
-      customTab.classList.remove('active');
-      textContent.classList.add('active');
-      customContent.classList.remove('active');
+    if (type === 'success') {
+      setTimeout(() => {
+        elements.statusMessage.style.display = 'none';
+      }, 3000);
+    }
+  }
+
+  // Validate input text - unchanged
+  function validateInput() {
+    const text = elements.textInput.value.trim();
+    if (text === '') {
+      elements.textError.textContent = '';
+      elements.textInput.classList.remove('invalid');
+      isTextValid = true;
+      return;
+    }
+    
+    const isValid = /^[A-Za-z0-9 ]+$/.test(text);
+    
+    if (!isValid) {
+      elements.textError.textContent = 'Only A-Z, 0-9, and spaces are allowed';
+      elements.textInput.classList.add('invalid');
+      isTextValid = false;
+    } else {
+      elements.textError.textContent = '';
+      elements.textInput.classList.remove('invalid');
+      isTextValid = true;
+    }
+  }
+  
+  // Event Listeners - consolidated setup
+  function setupEventListeners() {
+    // Input validation
+    elements.textInput.addEventListener('input', validateInput);
+    
+    // Tab switching
+    elements.textTab.addEventListener('click', () => {
+      elements.textTab.classList.add('active');
+      elements.customTab.classList.remove('active');
+      elements.textContent.classList.add('active');
+      elements.customContent.classList.remove('active');
     });
     
-    customTab.addEventListener('click', () => {
-      customTab.classList.add('active');
-      textTab.classList.remove('active');
-      customContent.classList.add('active');
-      textContent.classList.remove('active');
-      // Always enable send button in custom mode if connected
-      if (connectButton.disabled) {
-        sendButton.disabled = false;
+    elements.customTab.addEventListener('click', () => {
+      elements.customTab.classList.add('active');
+      elements.textTab.classList.remove('active');
+      elements.customContent.classList.add('active');
+      elements.textContent.classList.remove('active');
+      if (elements.connectButton.disabled) {
+        elements.sendButton.disabled = false;
       }
     });
 
-    // Setup repetition control events
-    endlessBtn.addEventListener('click', () => {
-      endlessBtn.classList.add('active');
-      countBtn.classList.remove('active');
-      repeatCount.disabled = true;
+    // Repetition controls
+    elements.endlessBtn.addEventListener('click', () => {
+      elements.endlessBtn.classList.add('active');
+      elements.countBtn.classList.remove('active');
+      elements.repeatCount.disabled = true;
     });
     
-    countBtn.addEventListener('click', () => {
-      countBtn.classList.add('active');
-      endlessBtn.classList.remove('active');
-      repeatCount.disabled = false;
+    elements.countBtn.addEventListener('click', () => {
+      elements.countBtn.classList.add('active');
+      elements.endlessBtn.classList.remove('active');
+      elements.repeatCount.disabled = false;
     });
     
-    // Set up segment click handlers
+    // Segment interaction
     document.querySelectorAll('.segment').forEach(segment => {
       const index = parseInt(segment.dataset.index);
       segment.addEventListener('click', () => {
@@ -569,8 +683,8 @@
       });
     });
     
-    // Clear all segments
-    clearSegmentsButton.addEventListener('click', () => {
+    // Clear segments button
+    elements.clearSegments.addEventListener('click', () => {
       document.querySelectorAll('.segment').forEach(segment => {
         segment.classList.remove('active');
       });
@@ -578,151 +692,198 @@
       updatePatternPreview();
     });
     
-    function updatePatternPreview() {
-      patternPreview.textContent = currentPattern.join('');
+    // Speed slider and input synchronization
+    elements.scrollSpeed.addEventListener('input', function() {
+      elements.scrollSpeedInput.value = this.value;
+      elements.speedValue.textContent = this.value;
+    });
+    
+    elements.scrollSpeedInput.addEventListener('input', function() {
+      // Ensure the input value is within the slider range
+      let value = parseInt(this.value);
+      if (isNaN(value)) value = 500;
+      if (value < 1) value = 1;
+      if (value > 1000) value = 1000;
+      
+      // Update the slider and stored value
+      elements.scrollSpeed.value = value;
+      elements.speedValue.textContent = value;
+    });
+    
+    // Connection buttons
+    elements.connectButton.addEventListener('click', connectToDevice);
+    elements.disconnectButton.addEventListener('click', disconnectFromDevice);
+    
+    // Command buttons
+    elements.sendButton.addEventListener('click', sendCustomPattern);
+    elements.stopButton.addEventListener('click', () => sendCommand('STOP'));
+    elements.normalScrollBtn.addEventListener('click', sendScrollText);
+    elements.rainbowScrollBtn.addEventListener('click', sendRainbowText);
+    elements.waveBtn.addEventListener('click', () => sendAnimation('WAVE'));
+    elements.spinnerBtn.addEventListener('click', () => sendAnimation('SPINNER'));
+    elements.flashBtn.addEventListener('click', () => sendAnimation('FLASH'));
+  }
+  
+  // Update pattern preview
+  function updatePatternPreview() {
+    elements.patternPreview.textContent = currentPattern.join('');
+  }
+  
+  // Connect to the device
+  async function connectToDevice() {
+    try {
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      
+      writer = port.writable.getWriter();
+      
+      // Setup reader for responses
+      const textDecoder = new TextDecoder();
+      reader = port.readable.getReader();
+      
+      // Start reading loop
+      readingTask = readSerialData(reader, textDecoder);
+      
+      elements.connectButton.textContent = "Connected";
+      elements.connectButton.disabled = true;
+      elements.disconnectButton.style.display = 'block';
+      showStatus('Connected to device', 'success');
+      
+      // Enable send button in custom mode
+      if (elements.customContent.classList.contains('active')) {
+        elements.sendButton.disabled = false;
+      }
+    } catch (err) {
+      showStatus(`Connection failed: ${err.message}`, 'error');
     }
-
-    // Update speed value display
-    scrollSpeed.addEventListener('input', function() {
-      speedValue.textContent = this.value;
-    });
-    
-    connectButton.addEventListener('click', async () => {
-      try {
-        port = await navigator.serial.requestPort();
-        await port.open({ baudRate: 9600 });
-        writer = port.writable.getWriter();
-        connectButton.textContent = "Connected";
-        connectButton.disabled = true;
-        disconnectButton.style.display = 'block'; // Show disconnect button
-      } catch (err) {
-        alert('Connection failed: ' + err);
-      }
-    });
-    
-    // Add disconnect button handler
-    disconnectButton.addEventListener('click', async () => {
-      if (writer) {
-        writer.releaseLock();
-        writer = null;
-      }
-      if (port) {
-        await port.close();
-        port = null;
-      }
-      connectButton.textContent = "Connect Serial";
-      connectButton.disabled = false;
-      disconnectButton.style.display = 'none';
-      sendButton.disabled = true;
-    });
-
-    sendButton.addEventListener('click', async () => {
-      if (!writer) return;
-
-      const color = colorInput.value.substring(1); // remove the #
-      
-      if (customContent.classList.contains('active')) {
-        // Custom pattern mode
-        const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
-        const pattern = currentPattern.join('');
-        const formatted = `CUSTOM|${pattern}|${color}|${displayIndex}\n`;
+  }
+  
+  // Read serial data continuously
+  async function readSerialData(reader, decoder) {
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
         
-        const encoder = new TextEncoder();
-        await writer.write(encoder.encode(formatted));
+        const text = decoder.decode(value);
+        console.log('Received:', text);
+        
+        if (text.includes('OK:')) {
+          showStatus('Command executed successfully', 'success');
+        } else if (text.includes('ERROR:')) {
+          showStatus(`Device error: ${text.split('ERROR:')[1].trim()}`, 'error');
+        }
       }
-    });
-    
-    // Add stop button handler
-    stopButton.addEventListener('click', async () => {
-      if (!writer) return;
-      
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode("STOP\n"));
-    });
-    
-    // Normal Scroll Text button
-    normalScrollBtn.addEventListener('click', async () => {
-      if (!writer) return;
-      
-      const text = textInput.value.trim().toUpperCase();
-      if (!text || !isTextValid) {
-        alert('Please enter valid text');
-        return;
+    } catch (error) {
+      console.error('Error reading data:', error);
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  
+  // Disconnect from device
+  async function disconnectFromDevice() {
+    if (reader) {
+      reader.cancel();
+      try {
+        await readingTask;
+      } catch (error) {
+        console.error('Error closing reader:', error);
       }
-      
-      const color = colorInput.value.substring(1);
-      const speed = scrollSpeed.value;
-      const isEndless = endlessBtn.classList.contains('active');
-      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
-      
-      const formatted = `SCROLL|${text}|${color}|${speed}|${repeats}\n`;
-      
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(formatted));
-    });
+      reader = null;
+    }
     
-    // Rainbow Text button with repetition support
-    rainbowScrollBtn.addEventListener('click', async () => {
-      if (!writer) return;
-      
-      const text = textInput.value.trim();
-      if (!text || !isTextValid) {
-        alert('Please enter valid text');
-        return;
-      }
-      
-      const speed = scrollSpeed.value;
-      const isEndless = endlessBtn.classList.contains('active');
-      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
-      
-      const formatted = `RAINBOW|${text}|${speed}|${repeats}\n`;
-      
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(formatted));
-    });
+    if (writer) {
+      writer.releaseLock();
+      writer = null;
+    }
     
-    // Animation buttons
-    waveBtn.addEventListener('click', async () => {
-      if (!writer) return;
-      
-      const color = colorInput.value.substring(1);
-      const speed = scrollSpeed.value;
-      const isEndless = endlessBtn.classList.contains('active');
-      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
-      
-      const formatted = `ANIMATE|WAVE|${color}|${speed}|${repeats}\n`;
-      
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(formatted));
-    });
+    if (port) {
+      await port.close();
+      port = null;
+    }
     
-    spinnerBtn.addEventListener('click', async () => {
-      if (!writer) return;
-      
-      const color = colorInput.value.substring(1);
-      const speed = scrollSpeed.value;
-      const isEndless = endlessBtn.classList.contains('active');
-      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
-      
-      const formatted = `ANIMATE|SPINNER|${color}|${speed}|${repeats}\n`;
-      
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(formatted));
-    });
+    elements.connectButton.textContent = "Connect Serial";
+    elements.connectButton.disabled = false;
+    elements.disconnectButton.style.display = 'none';
+    elements.sendButton.disabled = true;
+    showStatus('Disconnected from device', 'success');
+  }
+  
+  // Send custom pattern
+  async function sendCustomPattern() {
+    if (!writer) return;
     
-    flashBtn.addEventListener('click', async () => {
-      if (!writer) return;
+    if (elements.customContent.classList.contains('active')) {
+      const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
+      const pattern = currentPattern.join('');
+      const color = elements.customColorInput.value.substring(1);
       
-      const color = colorInput.value.substring(1);
-      const speed = scrollSpeed.value;
-      const isEndless = endlessBtn.classList.contains('active');
-      const repeats = isEndless ? -1 : parseInt(repeatCount.value);
-      
-      const formatted = `ANIMATE|FLASH|${color}|${speed}|${repeats}\n`;
-      
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(formatted));
+      await sendCommand('CUSTOM', {
+        pattern: pattern,
+        color: color,
+        displayIndex: displayIndex
+      });
+    }
+  }
+  
+  // Send scroll text
+  async function sendScrollText() {
+    const text = elements.textInput.value.trim().toUpperCase();
+    if (!text || !isTextValid) {
+      showStatus('Please enter valid text', 'error');
+      return;
+    }
+    
+    const color = elements.colorInput.value.substring(1);
+    const speed = elements.scrollSpeed.value;
+    const repeats = elements.endlessBtn.classList.contains('active') ? -1 : 
+                   parseInt(elements.repeatCount.value);
+    
+    await sendCommand('SCROLL', {
+      text: text,
+      color: color,
+      speed: speed,
+      repeats: repeats
     });
+  }
+  
+  // Send rainbow text
+  async function sendRainbowText() {
+    const text = elements.textInput.value.trim();
+    if (!text || !isTextValid) {
+      showStatus('Please enter valid text', 'error');
+      return;
+    }
+    
+    const speed = elements.scrollSpeed.value;
+    const repeats = elements.endlessBtn.classList.contains('active') ? -1 : 
+                   parseInt(elements.repeatCount.value);
+    
+    await sendCommand('RAINBOW', {
+      text: text,
+      speed: speed,
+      repeats: repeats
+    });
+  }
+  
+  // Send animation
+  async function sendAnimation(animationType) {
+    const color = elements.colorInput.value.substring(1);
+    const speed = elements.scrollSpeed.value;
+    const repeats = elements.endlessBtn.classList.contains('active') ? -1 : 
+                   parseInt(elements.repeatCount.value);
+    
+    await sendCommand('ANIMATE', {
+      type: animationType,
+      color: color,
+      speed: speed,
+      repeats: repeats
+    });
+  }
+  
+  // Initialize the application
+  setupEventListeners();
   </script>
 </body>
 </html>

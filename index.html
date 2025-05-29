@@ -7,28 +7,31 @@
     body {
       font-family: Arial, sans-serif;
       margin: 2rem;
-      background: #f0f0f0;
+      background: #121212; /* Dark background */
+      color: #e0e0e0; /* Light text for contrast */
     }
     .container {
-      background: #fff;
+      background: #1e1e1e; /* Dark container */
       padding: 2rem;
       border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
       max-width: 400px;
       margin: auto;
     }
-    input[type="text"], button {
+    input[type="text"], input[type="number"] {
       padding: 0.6rem;
       margin: 0.5rem 0;
       width: 100%;
       font-size: 1rem;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      border: 1px solid #444;
+      background-color: #2d2d2d;
+      color: #e0e0e0;
     }
     input[type="text"].invalid {
       border-color: #e74c3c;
-      background-color: #f8f8f8;
-      color: #999;
+      background-color: #3d2c2c;
+      color: #e0e0e0;
     }
     input[type="color"] {
       width: 100%;
@@ -37,8 +40,15 @@
       border-radius: 8px;
       margin: 0.5rem 0;
       cursor: pointer;
+      background-color: #2d2d2d;
     }
     button {
+      padding: 0.6rem;
+      margin: 0.5rem 0;
+      width: 100%;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
       background-color: #007BFF;
       color: white;
       cursor: pointer;
@@ -47,58 +57,56 @@
       background-color: #0056b3;
     }
     button:disabled {
-      background-color: #cccccc;
-      color: #666666;
+      background-color: #444444;
+      color: #888888;
       cursor: not-allowed;
       opacity: 0.7;
     }
     label {
       font-weight: bold;
+      color: #e0e0e0;
     }
     
-    /* New styles for tabs and custom character editor */
+    /* Tab styles */
     .tabs {
       display: flex;
       margin-bottom: 1rem;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid #444;
     }
     .tab {
       padding: 0.5rem 1rem;
       cursor: pointer;
       margin-right: 0.5rem;
       border-radius: 4px 4px 0 0;
+      background-color: #2d2d2d;
+      color: #e0e0e0;
     }
     .tab.active {
       background: #007BFF;
       color: white;
     }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
     
-    /* 16-segment display styles */
+    /* Segment display styles */
     .segment-display {
       position: relative;
       width: 200px;
-      height: 280px; /* Reduced from 300px to 280px */
+      height: 280px;
       margin: 0 auto 1rem;
-      background: #222;
+      background: #000000; /* Darker background for display */
       padding: 20px;
       border-radius: 8px;
     }
+    
     .segment {
       position: absolute;
-      background: #444;
+      background: #666666; /* Even brighter inactive segments for better visibility */
       cursor: pointer;
       border-radius: 4px;
-      z-index: 1; /* Base z-index for inactive segments */
+      z-index: 1;
     }
     .segment.active {
-      background: #007BFF;
-      z-index: 10; /* Higher z-index for active segments to ensure they're on top */
+      z-index: 10;
+      /* The background color will be set dynamically in JavaScript */
     }
     
     /* Horizontal segments */
@@ -110,7 +118,7 @@
     /* Vertical segments */
     .segment-v {
       height: 120px;
-      width:16px;
+      width: 16px;
     }
     
     /* Diagonal segments */
@@ -119,6 +127,129 @@
       width: 16px;
     }
     
+    /* Error message */
+    .error-message {
+      color: #ff6b6b; /* Brighter red for visibility */
+      font-size: 0.9rem;
+      margin-top: -0.3rem;
+      margin-bottom: 0.5rem;
+      min-height: 1.2rem;
+    }
+
+    /* Speed control styles - improved horizontal layout */
+    .speed-control {
+      margin-top: 0.5rem;
+    }
+
+    .speed-control label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .speed-control-container {
+      display: flex;
+      align-items: center;
+      gap: 10px; /* Space between slider and input */
+    }
+
+    .speed-control input[type="range"] {
+      flex: 1; /* Take up available space */
+      margin: 0;
+      background-color: #444;
+      accent-color: #007BFF;
+    }
+
+    .speed-control input[type="number"] {
+      width: 80px; /* Fixed width for number input */
+      padding: 0.3rem;
+      text-align: center;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+    }
+
+    .speed-control .speed-value {
+      display: none;
+    }
+    
+    /* Feature buttons */
+    .feature-button {
+      padding: 0.5rem;
+      background-color: #34a1eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    
+    .feature-button:hover {
+      background-color: #1c7fcf;
+    }
+
+    /* Repetition controls */
+    .repetition-button {
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border: 1px solid #444;
+    }
+    
+    .repetition-button.active {
+      background-color: #28a745;
+      color: white;
+      border: none;
+    }
+
+    /* Stop button */
+    .stop-button {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .stop-button:hover {
+      background-color: #bd2130;
+    }
+    
+    /* Effects section */
+    .effects-section {
+      border-top: 1px solid #444;
+    }
+    
+    /* Radio buttons */
+    .display-selector input[type="radio"] {
+      accent-color: #007BFF;
+    }
+    
+    /* Status messages */
+    .status-success {
+      background-color: #28a74530;
+      color: #28a745;
+      border: 1px solid #28a74560;
+    }
+    
+    .status-error {
+      background-color: #dc354530;
+      color: #dc3545;
+      border: 1px solid #dc354560;
+    }
+    
+    .status-pending {
+      background-color: #ffc10730;
+      color: #ffc107;
+      border: 1px solid #ffc10760;
+    }
+
+    /* Disconnect button */
+    #disconnectButton {
+      background-color: #6c757d;
+    }
+    
+    #disconnectButton:hover {
+      background-color: #5a6268;
+    }
+
     /* Positions for each segment */
     #seg-0 { /* Top left horizontal */
       top: 20px;
@@ -214,143 +345,6 @@
       margin: 1rem 0;
     }
 
-    .error-message {
-      color: #e74c3c;
-      font-size: 0.9rem;
-      margin-top: -0.3rem;
-      margin-bottom: 0.5rem;
-      min-height: 1.2rem;
-    }
-
-    /* Text mode toggle style */
-    .text-mode-toggle {
-      margin-bottom: 1rem;
-      display: flex;
-      gap: 1rem;
-    }
-    
-    .speed-control {
-      margin-top: 0.5rem;
-      text-align: center;
-    }
-    
-    .speed-control label {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-    
-    .speed-control-inputs {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    
-    .speed-control input[type="range"] {
-      width: 70%;
-      vertical-align: middle;
-      margin: 0;
-    }
-    
-    .speed-control input[type="number"] {
-      width: 20%;
-      padding: 0.3rem;
-      text-align: center;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      margin: 0;
-    }
-    
-    .speed-control .speed-value {
-      display: none; /* Hide the old speed value display */
-    }
-
-    /* Animation controls style */
-    .animation-controls {
-      margin-top: 1rem;
-      padding: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background-color: #f8f8f8;
-    }
-    
-    .animation-controls h3 {
-      margin-top: 0;
-    }
-    
-    .animation-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    .feature-button {
-      padding: 0.5rem;
-      background-color: #34a1eb;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background-color 0.2s;
-    }
-    
-    .feature-button:hover {
-      background-color: #1c7fcf;
-    }
-
-    /* Repetition controls */
-    .repetition-control {
-      margin-top: 1rem;
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-    
-    .repetition-input {
-      width: 60px;
-      text-align: center;
-    }
-    
-    .repetition-button {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      padding: 0.25rem 0.75rem;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    
-    .repetition-button.active {
-      background-color: #28a745;
-    }
-
-    .stop-button {
-      background-color: #dc3545;
-      color: white;
-      font-weight: bold;
-      margin-top: 1rem;
-    }
-    
-    .stop-button:hover {
-      background-color: #bd2130;
-    }
-    
-    .effects-section {
-      border-top: 1px solid #ddd;
-      margin-top: 1rem;
-      padding-top: 1rem;
-    }
-    
-    .effect-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin: 1rem 0;
-    }
-
     /* Add styles for connection buttons group */
     .connection-controls {
       display: flex;
@@ -362,40 +356,12 @@
       flex: 1;
     }
     
-    #disconnectButton {
-      background-color: #6c757d;
+    /* Update tab content display */
+    .tab-content {
       display: none;
     }
-    
-    #disconnectButton:hover {
-      background-color: #5a6268;
-    }
-
-    /* Add styles for status messages */
-    .status-message {
-      margin-top: 1rem;
-      padding: 0.5rem;
-      border-radius: 4px;
-      text-align: center;
-      display: none;
-    }
-    
-    .status-success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    
-    .status-error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    
-    .status-pending {
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeeba;
+    .tab-content.active {
+      display: block;
     }
   </style>
 </head>
@@ -440,7 +406,7 @@
       
       <div class="speed-control" id="speedControl">
         <label for="scrollSpeed">Scroll Speed:</label>
-        <div class="speed-control-inputs">
+        <div class="speed-control-container">
           <input type="range" id="scrollSpeed" min="1" max="1000" value="500">
           <input type="number" id="scrollSpeedInput" min="1" max="1000" value="500">
         </div>
@@ -637,6 +603,14 @@
     }
   }
   
+  // Function to update active segment colors to match the custom color picker
+  function updateActiveSegmentColors() {
+    const color = elements.customColorInput.value;
+    document.querySelectorAll('.segment.active').forEach(segment => {
+      segment.style.backgroundColor = color;
+    });
+  }
+  
   // Event Listeners - consolidated setup
   function setupEventListeners() {
     // Input validation
@@ -679,14 +653,26 @@
       segment.addEventListener('click', () => {
         segment.classList.toggle('active');
         currentPattern[index] = segment.classList.contains('active') ? 1 : 0;
+        
+        // Apply the current color when activated, or remove the color when deactivated
+        if (segment.classList.contains('active')) {
+          segment.style.backgroundColor = elements.customColorInput.value;
+        } else {
+          segment.style.backgroundColor = '#666666'; // Reset to inactive color
+        }
+        
         updatePatternPreview();
       });
     });
+    
+    // Color picker for custom pattern - add event to update active segments
+    elements.customColorInput.addEventListener('input', updateActiveSegmentColors);
     
     // Clear segments button
     elements.clearSegments.addEventListener('click', () => {
       document.querySelectorAll('.segment').forEach(segment => {
         segment.classList.remove('active');
+        segment.style.backgroundColor = '#666666'; // Reset to inactive color
       });
       currentPattern = Array(16).fill(0);
       updatePatternPreview();
@@ -884,6 +870,9 @@
   
   // Initialize the application
   setupEventListeners();
+  
+  // Call initially to ensure any pre-active segments get the right color
+  updateActiveSegmentColors();
   </script>
 </body>
 </html>

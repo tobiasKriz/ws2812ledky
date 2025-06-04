@@ -26,5 +26,3 @@ A modular and extensible alphanumeric display project using WS2812 RGB LEDs (Neo
 - ESPAsyncTCP / AsyncTCP for ESP32 (if using Wi-Fi)
 - BluetoothSerial (for Bluetooth mode)
 
-## Folder Structure
-

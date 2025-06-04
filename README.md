@@ -1,28 +1,27 @@
 # WS2812 LED Alphanumeric Display
 
-A modular and extensible alphanumeric display project using WS2812 RGB LEDs (NeoPixels). This project enables the display of scrolling text using a 16-segment representation for each character. Communication is supported via Bluetooth and Wi-Fi, with color customization and multiple display support.
+![Platform](https://img.shields.io/badge/platform-ESP32-blue)  
+A modular and extensible alphanumeric display project using WS2812 RGB LEDs (NeoPixels). This project enables the display of scrolling text using a 16-segment representation for each character. It communicates exclusively over Bluetooth and is designed to run on a custom PCB using an ESP32 or ESP32-C3.
 
 ## Features
 
 - 16-segment alphanumeric character display
 - Smooth scrolling text
-- Bluetooth Serial and Wi-Fi communication support
+- Bluetooth Serial communication
 - Color customization
-- Multiple display chaining
-- Modular codebase for easy extension
+- Support for multiple daisy-chained displays
+- Modular codebase for easy customization and maintenance
 
 ## Hardware Requirements
 
-- ESP32 or ESP32-C3 microcontroller
-- WS2812B (NeoPixel) LED strip or matrix
-- Power supply capable of handling the total LED current
-- Optional: HC-06 Bluetooth module (if not using onboard Bluetooth)
+- Custom PCB with:
+  - ESP32 or ESP32-C3 microcontroller
+  - WS2812B (NeoPixel) LED array
+- Power supply appropriate for the total number of LEDs
 
 ## Software Requirements
 
 - Arduino IDE or PlatformIO
-- FastLED library
-- ESPAsyncWebServer (if using Wi-Fi)
-- ESPAsyncTCP / AsyncTCP for ESP32 (if using Wi-Fi)
-- BluetoothSerial (for Bluetooth mode)
+- [FastLED](https://github.com/FastLED/FastLED) library
+- [BluetoothSerial](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/bluetooth/bluetoothserial.html) (built into ESP32 Arduino core)
 

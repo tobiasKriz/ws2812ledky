@@ -17,7 +17,6 @@ A modular and extensible alphanumeric display project using WS2812 RGB LEDs (Neo
 - Custom PCB with:
   - ESP32 or ESP32-C3 microcontroller
   - WS2812B (NeoPixel) LED array
-- Power supply appropriate for the total number of LEDs
 
 ## Software Requirements
 

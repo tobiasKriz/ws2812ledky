@@ -87,7 +87,69 @@
       color: white;
     }
     
-    /* Segment display styles */
+    /* Section divider */
+    .section-divider {
+      border-top: 2px solid #444;
+      margin: 1.5rem 0;
+      padding-top: 1rem;
+    }
+    
+    /* Color picker hint */
+    .color-picker-container {
+      position: relative;
+    }
+    
+    .color-picker-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0,0,0,0.6);
+      color: white;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      opacity: 1; /* Always visible */
+    }
+    
+    /* Remove hover effect since hint is always visible */
+    .color-picker-container:hover .color-picker-hint {
+      opacity: 1;
+    }
+    
+    /* Repetition controls improvement */
+    .repetition-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .repetition-option {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .repetition-divider {
+      font-weight: bold;
+      padding: 0 0.5rem;
+    }
+    
+    .repetition-button.inactive {
+      opacity: 0.6;
+    }
+    
+    /* Add styles for disabled number input */
+    input[type="number"]:disabled {
+      opacity: 0.5;
+      background-color: #222;
+      cursor: not-allowed;
+    }
+    
+    /* General segment styles */
     .segment-display {
       position: relative;
       width: 200px;
@@ -364,6 +426,34 @@
     .tab-content.active {
       display: block;
     }
+    
+    .color-hint {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: normal;
+      color: #aaa;
+      margin-top: 0.2rem;
+    }
+    
+    /* Modified color picker hint to always be visible */
+    .color-picker-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0,0,0,0.6);
+      color: white;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      opacity: 1; /* Always visible */
+    }
+    
+    /* Remove hover effect since hint is always visible */
+    .color-picker-container:hover .color-picker-hint {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -381,6 +471,7 @@
     <div class="tabs">
       <div class="tab active" id="textTab">Text Mode</div>
       <div class="tab" id="customTab">Custom Character</div>
+      <div class="tab" id="effectsTab">Effects</div>
     </div>
     
     <div class="tab-content active" id="textContent">
@@ -388,10 +479,7 @@
       <input type="text" id="textInput" placeholder="Enter text (e.g. HELLO)">
       <div id="textError" class="error-message"></div>
       
-      <div id="colorSection">
-        <label for="colorInput">Color</label>
-        <input type="color" id="colorInput" value="#ff0000">
-      </div>
+      <div class="section-divider"></div>
       
       <div class="text-mode-toggle">
         <div>
@@ -400,10 +488,17 @@
       </div>
       
       <div class="repetition-control">
-        <button class="repetition-button active" id="endlessBtn">Endless</button>
-        <button class="repetition-button" id="countBtn">Count</button>
-        <input type="number" id="repeatCount" class="repetition-input" value="1" min="1" max="100" disabled>
+        <div class="repetition-option">
+          <button class="repetition-button active" id="endlessBtn">Endless</button>
+        </div>
+        <div class="repetition-divider">OR</div>
+        <div class="repetition-option">
+          <button class="repetition-button inactive" id="countBtn">Count</button>
+          <input type="number" id="repeatCount" class="repetition-input" value="1" min="1" max="100" disabled>
+        </div>
       </div>
+      
+      <div class="section-divider"></div>
       
       <div class="speed-control" id="speedControl">
         <label for="scrollSpeed">Scroll Speed:</label>
@@ -414,16 +509,25 @@
         <div class="speed-value"><span id="speedValue">500</span> ms</div>
       </div>
       
-      <div class="effects-section">
-        <h4>Effects</h4>
-        <div class="effect-buttons">
-          <button class="feature-button" id="normalScrollBtn">Scroll Text</button>
-          <button class="feature-button" id="rainbowScrollBtn">Rainbow Text</button>
-          <button class="feature-button" id="waveBtn">Wave</button>
-          <button class="feature-button" id="spinnerBtn">Spinner</button>
-          <button class="feature-button" id="flashBtn">Flash</button>
+      <div class="section-divider"></div>
+      
+      <div id="colorSection">
+        <label for="colorInput">Color</label>
+        <span class="color-hint">Tap to change color</span>
+        <div class="color-picker-container">
+          <input type="color" id="colorInput" value="#ff0000">
+          <div class="color-picker-hint">Tap to change color</div>
         </div>
       </div>
+      
+      <div class="section-divider"></div>
+      
+      <div class="text-effects">
+        <button class="feature-button" id="normalScrollBtn">Scroll Text</button>
+        <button class="feature-button" id="rainbowScrollBtn">Rainbow Text</button>
+      </div>
+      
+      <div class="section-divider"></div>
       
       <button class="stop-button" id="stopButton">STOP ALL ANIMATIONS</button>
     </div>
@@ -460,7 +564,6 @@
         <div id="seg-13" class="segment segment-d" data-index="15"></div>
         
         <!-- Center cross segments -->
-        
         <div id="seg-15" class="segment segment-v" data-index="7"></div>
         <div id="seg-14" class="segment segment-v" data-index="10"></div>
       </div>
@@ -473,6 +576,8 @@
         Pattern: <span id="patternPreview">0000000000000000</span>
       </div>
       
+      <div class="section-divider"></div>
+      
       <div class="display-selector">
         <label>Select Display:</label>
         <input type="radio" id="display0" name="displaySelect" value="0" checked>
@@ -481,12 +586,75 @@
         <label for="display1">Display 2</label>
       </div>
       
+      <div class="section-divider"></div>
+      
       <div id="customColorSection">
-        <label for="customColorInput">Color</label>
-        <input type="color" id="customColorInput" value="#ff0000">
+        <label for="customColorInput">Color <span class="color-hint">(tap to change)</span></label>
+        <div class="color-picker-container">
+          <input type="color" id="customColorInput" value="#ff0000">
+          <div class="color-picker-hint">Tap to change color</div>
+        </div>
       </div>
       
+      <div class="section-divider"></div>
+      
       <button id="sendButton" disabled>Send Custom Pattern</button>
+    </div>
+    
+    <div class="tab-content" id="effectsContent">
+
+      <div class="text-mode-toggle">
+        <div>
+          <h4>Effect Repetition</h4>
+        </div>
+      </div>
+      
+      <div class="repetition-control">
+        <div class="repetition-option">
+          <button class="repetition-button active" id="effectsEndlessBtn">Endless</button>
+        </div>
+        <div class="repetition-divider">OR</div>
+        <div class="repetition-option">
+          <button class="repetition-button inactive" id="effectsCountBtn">Count</button>
+          <input type="number" id="effectsRepeatCount" class="repetition-input" value="1" min="1" max="100" disabled>
+        </div>
+      </div>
+      
+      <div class="section-divider"></div>
+      
+      <div class="speed-control" id="effectsSpeedControl">
+        <label for="effectsScrollSpeed">Animation Speed:</label>
+        <div class="speed-control-container">
+          <input type="range" id="effectsScrollSpeed" min="1" max="1000" value="500">
+          <input type="number" id="effectsScrollSpeedInput" min="1" max="1000" value="500">
+        </div>
+        <div class="speed-value"><span id="effectsSpeedValue">500</span> ms</div>
+      </div>
+      
+      <div class="section-divider"></div>
+      <div id="effectsColorSection">
+        <label for="effectsColorInput">Effect Color <span class="color-hint">(tap to change)</span></label>
+        <div class="color-picker-container">
+          <input type="color" id="effectsColorInput" value="#ff0000">
+          <div class="color-picker-hint">Tap to change color</div>
+        </div>
+      </div>
+
+      
+      <div class="section-divider"></div>
+      <div class="effects-section">
+        <h4>Select Effect</h4>
+        <div class="effect-buttons">
+          <button class="feature-button" id="effectsWaveBtn">Wave</button>
+          <button class="feature-button" id="effectsSpinnerBtn">Spinner</button>
+          <button class="feature-button" id="effectsFlashBtn">Flash</button>
+        </div>
+      </div>
+
+      
+      <div class="section-divider"></div>
+      
+      <button class="stop-button" id="effectsStopButton">STOP ALL ANIMATIONS</button>
     </div>
   </div>
 
@@ -505,26 +673,39 @@
     textInput: document.getElementById('textInput'),
     textError: document.getElementById('textError'),
     colorInput: document.getElementById('colorInput'),
+    effectsColorInput: document.getElementById('effectsColorInput'),
     customColorInput: document.getElementById('customColorInput'),
     statusMessage: document.getElementById('statusMessage'),
     textTab: document.getElementById('textTab'),
     customTab: document.getElementById('customTab'),
+    effectsTab: document.getElementById('effectsTab'),
     textContent: document.getElementById('textContent'),
     customContent: document.getElementById('customContent'),
+    effectsContent: document.getElementById('effectsContent'),
     patternPreview: document.getElementById('patternPreview'),
     clearSegments: document.getElementById('clearSegments'),
     scrollSpeed: document.getElementById('scrollSpeed'),
     scrollSpeedInput: document.getElementById('scrollSpeedInput'),
     speedValue: document.getElementById('speedValue'),
+    effectsScrollSpeed: document.getElementById('effectsScrollSpeed'),
+    effectsScrollSpeedInput: document.getElementById('effectsScrollSpeedInput'),
+    effectsSpeedValue: document.getElementById('effectsSpeedValue'),
     endlessBtn: document.getElementById('endlessBtn'),
     countBtn: document.getElementById('countBtn'),
     repeatCount: document.getElementById('repeatCount'),
+    effectsEndlessBtn: document.getElementById('effectsEndlessBtn'),
+    effectsCountBtn: document.getElementById('effectsCountBtn'),
+    effectsRepeatCount: document.getElementById('effectsRepeatCount'),
     stopButton: document.getElementById('stopButton'),
+    effectsStopButton: document.getElementById('effectsStopButton'),
     normalScrollBtn: document.getElementById('normalScrollBtn'),
     rainbowScrollBtn: document.getElementById('rainbowScrollBtn'),
     waveBtn: document.getElementById('waveBtn'),
     spinnerBtn: document.getElementById('spinnerBtn'),
-    flashBtn: document.getElementById('flashBtn')
+    flashBtn: document.getElementById('flashBtn'),
+    effectsWaveBtn: document.getElementById('effectsWaveBtn'),
+    effectsSpinnerBtn: document.getElementById('effectsSpinnerBtn'),
+    effectsFlashBtn: document.getElementById('effectsFlashBtn')
   };
   
   /**
@@ -621,31 +802,65 @@
     elements.textTab.addEventListener('click', () => {
       elements.textTab.classList.add('active');
       elements.customTab.classList.remove('active');
+      elements.effectsTab.classList.remove('active');
       elements.textContent.classList.add('active');
       elements.customContent.classList.remove('active');
+      elements.effectsContent.classList.remove('active');
     });
     
     elements.customTab.addEventListener('click', () => {
       elements.customTab.classList.add('active');
       elements.textTab.classList.remove('active');
+      elements.effectsTab.classList.remove('active');
       elements.customContent.classList.add('active');
       elements.textContent.classList.remove('active');
+      elements.effectsContent.classList.remove('active');
       if (elements.connectButton.disabled) {
         elements.sendButton.disabled = false;
       }
     });
+    
+    elements.effectsTab.addEventListener('click', () => {
+      elements.effectsTab.classList.add('active');
+      elements.textTab.classList.remove('active');
+      elements.customTab.classList.remove('active');
+      elements.effectsContent.classList.add('active');
+      elements.textContent.classList.remove('active');
+      elements.customContent.classList.remove('active');
+    });
 
-    // Repetition controls
+    // Repetition controls for text tab
     elements.endlessBtn.addEventListener('click', () => {
       elements.endlessBtn.classList.add('active');
+      elements.endlessBtn.classList.remove('inactive');
       elements.countBtn.classList.remove('active');
+      elements.countBtn.classList.add('inactive');
       elements.repeatCount.disabled = true;
     });
     
     elements.countBtn.addEventListener('click', () => {
       elements.countBtn.classList.add('active');
+      elements.countBtn.classList.remove('inactive');
       elements.endlessBtn.classList.remove('active');
+      elements.endlessBtn.classList.add('inactive');
       elements.repeatCount.disabled = false;
+    });
+    
+    // Repetition controls for effects tab
+    elements.effectsEndlessBtn.addEventListener('click', () => {
+      elements.effectsEndlessBtn.classList.add('active');
+      elements.effectsEndlessBtn.classList.remove('inactive');
+      elements.effectsCountBtn.classList.remove('active');
+      elements.effectsCountBtn.classList.add('inactive');
+      elements.effectsRepeatCount.disabled = true;
+    });
+    
+    elements.effectsCountBtn.addEventListener('click', () => {
+      elements.effectsCountBtn.classList.add('active');
+      elements.effectsCountBtn.classList.remove('inactive');
+      elements.effectsEndlessBtn.classList.remove('active');
+      elements.effectsEndlessBtn.classList.add('inactive');
+      elements.effectsRepeatCount.disabled = false;
     });
     
     // Segment interaction
@@ -666,7 +881,16 @@
       });
     });
     
-    // Color picker for custom pattern - add event to update active segments
+    // Color pickers - sync effects color with text color
+    elements.colorInput.addEventListener('input', function() {
+      elements.effectsColorInput.value = this.value;
+    });
+    
+    elements.effectsColorInput.addEventListener('input', function() {
+      elements.colorInput.value = this.value;
+    });
+    
+    // Custom color input for segments
     elements.customColorInput.addEventListener('input', updateActiveSegmentColors);
     
     // Clear segments button
@@ -679,10 +903,13 @@
       updatePatternPreview();
     });
     
-    // Speed slider and input synchronization
+    // Speed slider and input synchronization for text tab
     elements.scrollSpeed.addEventListener('input', function() {
       elements.scrollSpeedInput.value = this.value;
       elements.speedValue.textContent = this.value;
+      elements.effectsScrollSpeed.value = this.value;
+      elements.effectsScrollSpeedInput.value = this.value;
+      elements.effectsSpeedValue.textContent = this.value;
     });
     
     elements.scrollSpeedInput.addEventListener('input', function() {
@@ -695,17 +922,52 @@
       // Update the slider and stored value
       elements.scrollSpeed.value = value;
       elements.speedValue.textContent = value;
+      elements.effectsScrollSpeed.value = value;
+      elements.effectsScrollSpeedInput.value = value;
+      elements.effectsSpeedValue.textContent = value;
+    });
+    
+    // Speed slider and input synchronization for effects tab
+    elements.effectsScrollSpeed.addEventListener('input', function() {
+      elements.effectsScrollSpeedInput.value = this.value;
+      elements.effectsSpeedValue.textContent = this.value;
+      elements.scrollSpeed.value = this.value;
+      elements.scrollSpeedInput.value = this.value;
+      elements.speedValue.textContent = this.value;
+    });
+    
+    elements.effectsScrollSpeedInput.addEventListener('input', function() {
+      // Ensure the input value is within the slider range
+      let value = parseInt(this.value);
+      if (isNaN(value)) value = 500;
+      if (value < 1) value = 1;
+      if (value > 1000) value = 1000;
+      
+      // Update the slider and stored value
+      elements.effectsScrollSpeed.value = value;
+      elements.effectsSpeedValue.textContent = value;
+      elements.scrollSpeed.value = value;
+      elements.scrollSpeedInput.value = value;
+      elements.speedValue.textContent = value;
     });
     
     // Connection buttons
     elements.connectButton.addEventListener('click', connectToDevice);
     elements.disconnectButton.addEventListener('click', disconnectFromDevice);
     
-    // Command buttons
+    // Command buttons for text tab
     elements.sendButton.addEventListener('click', sendCustomPattern);
     elements.stopButton.addEventListener('click', () => sendCommand('STOP'));
     elements.normalScrollBtn.addEventListener('click', sendScrollText);
     elements.rainbowScrollBtn.addEventListener('click', sendRainbowText);
+    
+    // Move animation buttons from text tab to effects tab
+    elements.effectsWaveBtn.addEventListener('click', () => sendEffectAnimation('WAVE'));
+    elements.effectsSpinnerBtn.addEventListener('click', () => sendEffectAnimation('SPINNER'));
+    elements.effectsFlashBtn.addEventListener('click', () => sendEffectAnimation('FLASH'));
+    elements.effectsStopButton.addEventListener('click', () => sendCommand('STOP'));
+    
+    // Keep the original animation buttons working for backward compatibility
     elements.waveBtn.addEventListener('click', () => sendAnimation('WAVE'));
     elements.spinnerBtn.addEventListener('click', () => sendAnimation('SPINNER'));
     elements.flashBtn.addEventListener('click', () => sendAnimation('FLASH'));
@@ -802,6 +1064,9 @@
     if (!writer) return;
     
     if (elements.customContent.classList.contains('active')) {
+      // Send STOP command first
+      await sendCommand('STOP');
+      
       const displayIndex = document.querySelector('input[name="displaySelect"]:checked').value;
       const pattern = currentPattern.join('');
       const color = elements.customColorInput.value.substring(1);
@@ -821,6 +1086,9 @@
       showStatus('Please enter valid text', 'error');
       return;
     }
+    
+    // Send STOP command first
+    await sendCommand('STOP');
     
     const color = elements.colorInput.value.substring(1);
     const speed = elements.scrollSpeed.value;
@@ -843,6 +1111,9 @@
       return;
     }
     
+    // Send STOP command first
+    await sendCommand('STOP');
+    
     const speed = elements.scrollSpeed.value;
     const repeats = elements.endlessBtn.classList.contains('active') ? -1 : 
                    parseInt(elements.repeatCount.value);
@@ -856,10 +1127,31 @@
   
   // Send animation
   async function sendAnimation(animationType) {
+    // Send STOP command first
+    await sendCommand('STOP');
+    
     const color = elements.colorInput.value.substring(1);
     const speed = elements.scrollSpeed.value;
     const repeats = elements.endlessBtn.classList.contains('active') ? -1 : 
                    parseInt(elements.repeatCount.value);
+    
+    await sendCommand('ANIMATE', {
+      type: animationType,
+      color: color,
+      speed: speed,
+      repeats: repeats
+    });
+  }
+  
+  // Add a new function for effect animations that uses the effects tab controls
+  async function sendEffectAnimation(animationType) {
+    // Send STOP command first
+    await sendCommand('STOP');
+    
+    const color = elements.effectsColorInput.value.substring(1);
+    const speed = elements.effectsScrollSpeed.value;
+    const repeats = elements.effectsEndlessBtn.classList.contains('active') ? -1 : 
+                   parseInt(elements.effectsRepeatCount.value);
     
     await sendCommand('ANIMATE', {
       type: animationType,
@@ -874,6 +1166,18 @@
   
   // Call initially to ensure any pre-active segments get the right color
   updateActiveSegmentColors();
+  
+  // Ensure segment display is properly shown
+  document.addEventListener('DOMContentLoaded', function() {
+    // Apply background color to all segments
+    document.querySelectorAll('.segment').forEach(segment => {
+      segment.style.backgroundColor = '#666666';
+    });
+    
+    // Apply inactive class to count button initially
+    elements.countBtn.classList.add('inactive');
+    elements.effectsCountBtn.classList.add('inactive');
+  });
   </script>
 </body>
 </html>
